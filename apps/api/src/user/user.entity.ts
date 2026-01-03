@@ -21,7 +21,7 @@ export class User {
   image: string;
 
   @Column({ unique: true })
-  googleId: true;
+  googleId: string;
 
   @CreateDateColumn()
   createdAt: Date;

@@ -3,42 +3,31 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { UserService } from '../user/user.service';
 import { Repository } from 'typeorm';
 import { User } from '../user/user.entity';
+import { CreateUserDto } from 'src/user/dtos/create-user.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    private usersService: UserService
-  ) {}
+  constructor(private usersService: UserService) {}
 
   // validate Google User
-  async validateGoogleUser(profile: any): Promise<User> {
-    console.log('TODO: implement');
+  async validateGoogleUser(googleUser: CreateUserDto): Promise<User> {
+    let user = await this.usersService.findByGoogleId(googleUser.googleId);
 
-    const { id, name, emails, photos } = profile;
+    if (user) return user;
 
-    console.log(`[auth.service] ${photos}`);
-
-    let user = await this.usersService.findOne(id);
-
-    if (!user) {
-      // Create new user
-      user = this.userRepository.create({
-        googleId: id,
-        email: emails[0].value,
-        name: name,
-        image: photos[0]?.value,
-      });
-      await this.userRepository.save(user);
-    }
-
-    return user;
+    return await this.usersService.create(googleUser);
   }
 
   // generate JWT
   generateJwt(user: any) {
     // TODO: generateJwt
     throw new Error('Method not implemented.');
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+    };
+
+    return this.jwtService.sign(payload);
   }
 }

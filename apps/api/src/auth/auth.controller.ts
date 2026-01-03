@@ -14,23 +14,23 @@ export class AuthController {
   // - Handle login via `GET /auth/login/google` (public)
   @Get('login/google')
   @UseGuards(AuthGuard('google'))
-  async googleLogin() {
+  async googleLogin(@Req() req) {
     // Google OAuth flow
   }
 
-  // - Handle login validation via `GET /auth/validate/google` (public)
+  // - Handle login validation via `GET /auth/validate/google` (public) env.GOOGLE_CALLBACK_URL
 
   @Get('validate/google')
   @UseGuards(AuthGuard('google'))
-  async googleCallback(@Req() req, @Res() res: Response) {
+  async googleAuthRedirect(@Req() req, @Res() res: Response) {
+    // This function is called upon successful authentication
+    console.log(`req: ${req}`);
+
     const user = req.user;
     const token = this.authService.generateJwt(user);
 
     // Redirect to frontend with token
-    const frontendUrl = this.configService.get('FRONTEND_URL');
+    const frontendUrl = this.configService.get<string>('frontend.url');
     res.redirect(`${frontendUrl}/signin?token=${token}`);
   }
-
-  @Get('logout')
-  async logout() {}
 }

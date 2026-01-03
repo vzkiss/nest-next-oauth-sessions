@@ -3,6 +3,7 @@ import { Strategy, VerifyCallback } from 'passport-google-oauth20';
 import { AuthService } from '../auth.service';
 import { PassportStrategy } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
+import { CreateUserDto } from 'src/user/dtos/create-user.dto';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -11,18 +12,33 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private authService: AuthService
   ) {
     super({
-      clientID: configService.get('GOOGLE_CLIENT_ID'),
-      clientSecret: configService.get('GOOGLE_CLIENT_SECRET'),
-      callbackURL: configService.get('GOOGLE_CALLBACK_URL'),
+      clientID: configService.get<string>('google.clientId'),
+      clientSecret: configService.get<string>('google.clientSecret'),
+      callbackURL: configService.get<string>('google.callbackUrl'),
       scope: ['email', 'profile'],
     });
   }
 
-  async validate(profile: any, done: VerifyCallback): Promise<any> {
-    const user = this.authService.validateGoogleUser(profile);
+  // handle data returned from Google
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: VerifyCallback
+  ): Promise<any> {
+    console.log(`[google.strategy] validate: ${{ profile }}`);
 
-    console.log(`[google.strategy] validate: ${user}`);
+    const googleUser: CreateUserDto = {
+      googleId: profile.id,
+      email: profile.emails[0].value,
+      name: `${profile.name.givenName} ${profile.name.familyName}`,
+      image: profile.photos[0].value,
+    };
 
-    done(user, null);
+    const user = this.authService.validateGoogleUser(googleUser);
+
+    console.log(`[google.strategy] validate: ${JSON.stringify(user)}`);
+
+    done(null, user);
   }
 }
