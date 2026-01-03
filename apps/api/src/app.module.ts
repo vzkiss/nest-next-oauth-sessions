@@ -6,7 +6,7 @@ import { DatabaseModule } from './db/database.module';
 import configuration from './config/configuration';
 import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './users/users.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -17,7 +17,7 @@ import { UsersModule } from './users/users.module';
     }),
     DatabaseModule,
     AuthModule,
-    UsersModule,
+    UserModule,
   ],
   controllers: [AppController],
   providers: [AppService],
