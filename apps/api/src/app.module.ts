@@ -11,7 +11,7 @@ import { join } from 'path';
     ConfigModule.forRoot({
       isGlobal: true,
       load: [configuration],
-      envFilePath: join(__dirname, '../../../.env.local'), // Add this
+      envFilePath: join(__dirname, '../../../.env.local'),
     }),
     DatabaseModule,
   ],
