@@ -10,8 +10,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         type: 'postgres',
         url: configService.get<string>('database.url'),
         entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-        synchronize: configService.get('nodeEnv') !== 'production',
-        logging: configService.get('nodeEnv') === 'development',
+        synchronize: configService.get('nodeEnv') !== 'production', // auto creates tables in dev
+        logging: configService.get('nodeEnv') === 'development', // show SQL queris in console
       }),
       inject: [ConfigService],
     }),

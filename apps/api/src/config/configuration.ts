@@ -14,7 +14,7 @@ export default () => ({
     callbackUrl: process.env.GOOGLE_CALLBACK_URL,
   },
   frontend: {
-    url: process.env.FRONTEND_URL || 'http://localhost:4000',
+    url: process.env.FRONTEND_URL || 'http://localhost:3001',
   },
   nodeEnv: process.env.NODE_ENV || 'development',
 });
