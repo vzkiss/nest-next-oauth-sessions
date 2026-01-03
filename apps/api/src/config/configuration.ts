@@ -6,7 +6,9 @@ export default () => ({
   },
   jwt: {
     secret: process.env.JWT_SECRET,
-    expiresIn: '7d',
+    expiresIn: process.env.JWT_EXPIRES_IN
+      ? parseInt(process.env.JWT_EXPIRES_IN, 10)
+      : 604800, // 7 days in seconds (7 * 24 * 60 * 60)
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID,

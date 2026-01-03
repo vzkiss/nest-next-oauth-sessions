@@ -4,10 +4,14 @@ import { UserService } from '../user/user.service';
 import { Repository } from 'typeorm';
 import { User } from '../user/user.entity';
 import { CreateUserDto } from 'src/user/dtos/create-user.dto';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
-  constructor(private usersService: UserService) {}
+  constructor(
+    private usersService: UserService,
+    private jwtService: JwtService
+  ) {}
 
   // validate Google User
   async validateGoogleUser(googleUser: CreateUserDto): Promise<User> {
@@ -19,10 +23,7 @@ export class AuthService {
   }
 
   // generate JWT
-  generateJwt(user: any) {
-    // TODO: generateJwt
-    throw new Error('Method not implemented.');
-
+  generateJwt(user: User) {
     const payload = {
       sub: user.id,
       email: user.email,
