@@ -6,7 +6,12 @@ export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getRoot() {
+    return { message: 'XBorg API v1.0' };
+  }
+
+  @Get('health')
+  getHealth() {
+    return { status: 'ok', timestamp: new Date().toISOString() };
   }
 }
