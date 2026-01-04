@@ -29,8 +29,17 @@ export class AuthController {
     const user = req.user;
     const token = this.authService.generateJwt(user);
 
+    // Set HttpOnly cookie (can't be accessed by JavaScript)
+    res.cookie('access_token', token, {
+      httpOnly: true,
+      secure: this.configService.get<string>('nodeEnv') === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     // Redirect to frontend with token
     const frontendUrl = this.configService.get<string>('frontend.url');
-    res.redirect(`${frontendUrl}/signin?token=${token}`);
+    // res.redirect(`${frontendUrl}/signin?token=${token}`); // debug
+    res.redirect(`${frontendUrl}/auth/callback`);
   }
 }
