@@ -20,7 +20,7 @@ export class User {
   @Column({ nullable: true })
   image: string;
 
-  @Column({ unique: true })
+  @Column({ unique: true }) // Adds a unique constraint/index
   googleId: string;
 
   @CreateDateColumn()

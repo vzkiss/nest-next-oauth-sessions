@@ -6,6 +6,7 @@ import {
   IsUrl,
   IsUUID,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateUserDto {
   @IsString()
@@ -18,6 +19,7 @@ export class CreateUserDto {
   @IsString()
   @IsUrl()
   @IsOptional()
+  @Transform(({ value }) => value?.trim())
   image?: string;
 
   @IsUUID()
