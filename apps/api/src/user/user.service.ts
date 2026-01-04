@@ -23,15 +23,18 @@ export class UserService {
     return await this.userRepository.save(user);
   }
 
+  async findById(id: string): Promise<User | null> {
+    return await this.userRepository.findOne({
+      where: { id },
+    });
+  }
+
   async findByGoogleId(id: string): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { googleId: id },
     });
   }
 
-  // TODO: update profile
-  // receive (userId, UpdateProfileDto)
-  // return User
   async update(id: string, updateUser: UpdateUserDto): Promise<User> {
     await this.userRepository.update(id, updateUser);
     const user = await this.userRepository.findOne({ where: { id } });

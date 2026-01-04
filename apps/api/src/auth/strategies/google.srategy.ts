@@ -26,7 +26,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     profile: any,
     done: VerifyCallback
   ): Promise<any> {
-    console.log(`[google.strategy] validate: ${{ profile }}`);
+    // debug
+    console.log(`[google.strategy] validate:`);
+    console.table(JSON.stringify(profile, null, 2));
 
     const googleUser: CreateUserDto = {
       googleId: profile.id,
@@ -36,8 +38,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     };
 
     const user = this.authService.validateGoogleUser(googleUser);
-
-    console.log(`[google.strategy] validate: ${JSON.stringify(user)}`);
 
     done(null, user);
   }

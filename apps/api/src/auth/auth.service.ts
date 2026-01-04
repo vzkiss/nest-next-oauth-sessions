@@ -5,12 +5,14 @@ import { Repository } from 'typeorm';
 import { User } from '../user/user.entity';
 import { CreateUserDto } from 'src/user/dtos/create-user.dto';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UserService,
-    private jwtService: JwtService
+    private jwtService: JwtService,
+    private configService: ConfigService
   ) {}
 
   // validate Google User
@@ -27,8 +29,20 @@ export class AuthService {
     const payload = {
       sub: user.id,
       email: user.email,
+      iat: Math.floor(Date.now() / 1000), // issued at
     };
 
     return this.jwtService.sign(payload);
+  }
+
+  // verify JWT manually if needed
+  verifyJwt(token: string) {
+    try {
+      return this.jwtService.verify(token, {
+        secret: this.configService.get<string>('jwt.secret'),
+      });
+    } catch (error) {
+      return null;
+    }
   }
 }
