@@ -26,19 +26,31 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     profile: any,
     done: VerifyCallback
   ): Promise<any> {
-    // debug
-    console.log(`[google.strategy] validate:`);
-    console.table(JSON.stringify(profile, null, 2));
+    // Validate profile data exists before accessing
+    if (!profile || !profile.id) {
+      return done(new Error('Invalid Google profile: missing id'), null);
+    }
+
+    if (!profile.emails || !profile.emails[0] || !profile.emails[0].value) {
+      return done(new Error('Invalid Google profile: missing email'), null);
+    }
+
+    if (!profile.name || !profile.name.givenName || !profile.name.familyName) {
+      return done(new Error('Invalid Google profile: missing name'), null);
+    }
 
     const googleUser: CreateUserDto = {
       googleId: profile.id,
       email: profile.emails[0].value,
       name: `${profile.name.givenName} ${profile.name.familyName}`,
-      image: profile.photos[0].value,
+      image: profile.photos?.[0]?.value, // Optional, safe access
     };
 
-    const user = this.authService.validateGoogleUser(googleUser);
-
-    done(null, user);
+    try {
+      const user = await this.authService.validateGoogleUser(googleUser);
+      done(null, user);
+    } catch (error) {
+      done(error, null);
+    }
   }
 }
