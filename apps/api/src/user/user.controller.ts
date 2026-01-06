@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Put,
   Req,
-  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';

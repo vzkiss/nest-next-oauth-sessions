@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
+import { AuthProvider } from './context/AuthContext';
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -24,7 +25,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        {children}
+        <AuthProvider>
+          <div className="flex h-screen flex-col items-center">
+            <main className="mt-auto mb-auto flex min-w-xs">{children}</main>
+            <footer className="mb-4 text-sm">
+              built by{' '}
+              <a href="https://vzkiss.com" className="underline">
+                vzkiss
+              </a>
+            </footer>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

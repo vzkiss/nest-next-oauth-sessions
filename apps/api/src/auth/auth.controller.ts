@@ -19,21 +19,20 @@ export class AuthController {
   }
 
   // - Handle login validation via `GET /auth/validate/google` (public) env.GOOGLE_CALLBACK_URL
-
   @Get('validate/google')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req, @Res() res: Response) {
-    // This function is called upon successful authentication
-    console.log(`req: ${req}`);
-
     const user = req.user;
     const token = this.authService.generateJwt(user);
 
     // Set HttpOnly cookie (can't be accessed by JavaScript)
+    const isProduction =
+      this.configService.get<string>('nodeEnv') === 'production';
+
     res.cookie('access_token', token, {
       httpOnly: true,
-      secure: this.configService.get<string>('nodeEnv') === 'production',
-      sameSite: 'lax',
+      secure: isProduction, // Only send over HTTPS in production
+      sameSite: 'lax', // CSRF protection
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -41,5 +40,12 @@ export class AuthController {
     const frontendUrl = this.configService.get<string>('frontend.url');
     // res.redirect(`${frontendUrl}/signin?token=${token}`); // debug
     res.redirect(`${frontendUrl}/auth/callback`);
+  }
+
+  // Optional: Logout endpoint
+  @Get('logout')
+  async logout(@Res() res: Response) {
+    res.clearCookie('access_token');
+    res.json({ message: 'Logged out successfully' });
   }
 }

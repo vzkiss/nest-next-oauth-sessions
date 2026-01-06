@@ -8,21 +8,27 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="flex w-full flex-col items-center gap-4">
       <button
         onClick={handleGoogleLogin}
-        className="flex items-center gap-2 py-3 px-6 bg-black hover:bg-black/80 text-white rounded-full cursor-pointer"
+        className="flex cursor-pointer items-center gap-2 rounded-full bg-black px-6 py-3 text-white hover:bg-black/80"
       >
         <Image
           width={20}
           height={20}
-          className="w-5 h-5"
+          className="h-5 w-5"
           src="https://www.svgrepo.com/show/475656/google-color.svg"
           loading="lazy"
           alt="google logo"
         />
         <span>Sign in with Google</span>
       </button>
+
+      <div className="mt-4 text-center">
+        <a href="/" className="cursor-pointer hover:underline">
+          Home
+        </a>
+      </div>
     </div>
   );
 }
