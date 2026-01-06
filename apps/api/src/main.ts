@@ -4,12 +4,14 @@ import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { validateRequiredConfig, logConfig } from './config/config.utils';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const configService = app.get(ConfigService);
 
+  // Security: Basic security headers
   app.use(helmet());
   app.use(cookieParser());
 
@@ -31,24 +33,15 @@ async function bootstrap() {
     })
   );
 
+  // Validate required environment variables
+  validateRequiredConfig(configService);
+
   logConfig(configService);
 
   const port = configService.get<number>('port') || 3000;
   await app.listen(port);
 
-  console.log(`Backend running on http://localhost: ${port})`);
+  console.log(`Backend running on http://localhost:${port}`);
 }
-bootstrap();
 
-const logConfig = (configService: ConfigService) => {
-  // Debug: Check if env vars are loaded
-  console.log('[config] DATABASE_URL:', configService.get('database.url'));
-  console.log(
-    '[config] JWT_SECRET:',
-    configService.get('jwt.secret') ? '✓ Loaded' : '✗ Missing'
-  );
-  console.log(
-    '[config] GOOGLE_CLIENT_ID:',
-    configService.get('google.clientId') ? '✓ Loaded' : '✗ Missing'
-  );
-};
+bootstrap();
