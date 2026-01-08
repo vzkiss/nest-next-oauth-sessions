@@ -6,6 +6,8 @@
   "exports": {
     "./base": "./base.js",
     "./next-js": "./next.js",
+    "./nest-js": "./nest.js",
+    "./prettier-base": "./prettier-base.mjs",
     "./react-internal": "./react-internal.js"
   },
   "devDependencies": {
@@ -18,6 +20,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-turbo": "^2.7.1",
     "globals": "^16.5.0",
+    "prettier": "^3.7.4",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.50.0"
   }

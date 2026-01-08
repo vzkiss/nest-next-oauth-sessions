@@ -28,12 +28,12 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="w-lg grow space-y-6">
+    <div className="w-full grow space-y-6 text-gray-900 hover:underline">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Profile</h1>
         <button
           onClick={handleLogout}
-          className="cursor-pointer text-sm text-gray-600 hover:text-gray-900 hover:underline"
+          className="flex cursor-pointer text-sm text-gray-600 hover:text-gray-900 hover:underline"
         >
           Logout
         </button>

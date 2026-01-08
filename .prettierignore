@@ -1,7 +1,29 @@
+# Dependencies
 node_modules
+**/node_modules
+
+# Build outputs
 dist
 .next
 .turbo
-coverage
+build
+out
+
+# Logs
 *.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.*
+
+# Lock files
 pnpm-lock.yaml
+package-lock.json
+
+# Coverage
+coverage
+
+# Other
+.DS_Store

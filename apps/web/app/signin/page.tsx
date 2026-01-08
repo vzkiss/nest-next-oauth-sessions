@@ -24,7 +24,7 @@ export default function SignInPage() {
         <span>Sign in with Google</span>
       </button>
 
-      <div className="mt-4 text-center">
+      <div className="text-center text-sm">
         <a href="/" className="cursor-pointer hover:underline">
           Home
         </a>

@@ -18,7 +18,7 @@ export class UserService {
       googleId: googleUser.googleId,
       email: googleUser.email,
       name: googleUser.name,
-      image: googleUser.image, // Fixed: was incorrectly using googleUser.name
+      image: googleUser.image,
     });
     return await this.userRepository.save(user);
   }
