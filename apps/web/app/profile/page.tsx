@@ -28,7 +28,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="w-full grow space-y-6 text-gray-900 hover:underline">
+    <div className="w-full grow space-y-6 text-gray-900">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Profile</h1>
         <button

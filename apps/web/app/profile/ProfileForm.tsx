@@ -109,7 +109,7 @@ export function ProfileForm({ user }: Props) {
           <div className="relative mt-1">
             <input
               {...form.register('image')}
-              placeholder="https://example.com/avatar.jpg"
+              placeholder=""
               className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10"
             />
 
