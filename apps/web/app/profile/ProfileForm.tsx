@@ -7,7 +7,6 @@ import type { AuthUser } from '../context/AuthContext';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { config } from '../../lib/config';
-import Image from 'next/image';
 
 const DEFAULT_AVATAR = '/avatar.png';
 
@@ -74,7 +73,8 @@ export function ProfileForm({ user }: Props) {
 
   return (
     <div className="space-y-4 rounded-3xl bg-white p-6 shadow-xs">
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={imageValue}
         alt={user.name}
         className="mx-auto h-20 w-20 rounded-full"
