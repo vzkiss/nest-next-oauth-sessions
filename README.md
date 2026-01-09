@@ -55,11 +55,10 @@ https://xborg.notion.site/tech-challenge
    GOOGLE_CLIENT_SECRET=your-google-client-secret
    GOOGLE_CALLBACK_URL=http://localhost:3000/auth/validate/google
 
+   # Frontend public URL (used by backend for redirects / absolute links)
+   FRONTEND_URL="http://localhost:4000"
 
    # Frontend (Next.js)
-
-   # Base URL of the frontend app (used for links / metadata if needed)
-   FRONTEND_URL="http://localhost:4000"
 
    # API endpoint exposed to the browser
    NEXT_PUBLIC_API_URL="http://localhost:3000"
