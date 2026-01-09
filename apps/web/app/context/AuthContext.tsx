@@ -7,6 +7,7 @@ import {
   ReactNode,
   useCallback,
 } from 'react';
+import { config } from '../../lib/config';
 
 export type AuthUser = {
   id: string;
@@ -28,16 +29,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUser = useCallback(async (): Promise<AuthUser | null> => {
     try {
-      const res = await fetch('http://localhost:3000/user/profile', {
+      const response = await fetch(`${config.apiUrl}/user/profile`, {
         credentials: 'include',
       });
 
-      if (!res.ok) {
+      if (!response.ok) {
         setUser(null);
         return null;
       }
 
-      const data: AuthUser = await res.json();
+      const data: AuthUser = await response.json();
       setUser(data);
       return data;
     } catch (error) {
@@ -48,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await fetch('http://localhost:3000/auth/logout', {
+    await fetch(`${config.apiUrl}/auth/logout`, {
       credentials: 'include',
     });
     setUser(null);

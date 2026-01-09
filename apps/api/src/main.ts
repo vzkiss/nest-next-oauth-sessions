@@ -44,4 +44,7 @@ async function bootstrap() {
   console.log(`Backend running on http://localhost:${port}`);
 }
 
-bootstrap();
+bootstrap().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

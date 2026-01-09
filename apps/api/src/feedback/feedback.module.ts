@@ -1,5 +1,5 @@
-import { Module } from "@nestjs/common";
-import { FeedbackController } from "./feedback.controller";
+import { Module } from '@nestjs/common';
+import { FeedbackController } from './feedback.controller';
 
 @Module({
   imports: [],

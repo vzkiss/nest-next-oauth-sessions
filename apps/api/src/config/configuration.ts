@@ -18,7 +18,7 @@ export default () => ({
       'http://localhost:3000/auth/validate/google',
   },
   frontend: {
-    url: process.env.FRONTEND_URL || 'http://localhost:3001',
+    url: process.env.FRONTEND_URL,
   },
   nodeEnv: process.env.NODE_ENV || 'development',
 });

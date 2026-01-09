@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
 import { UserService } from '../user/user.service';
-import { Repository } from 'typeorm';
 import { User } from '../user/user.entity';
 import { CreateUserDto } from 'src/user/dtos/create-user.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -17,7 +15,7 @@ export class AuthService {
 
   // validate Google User
   async validateGoogleUser(googleUser: CreateUserDto): Promise<User> {
-    let user = await this.usersService.findByGoogleId(googleUser.googleId);
+    const user = await this.usersService.findByGoogleId(googleUser.googleId);
 
     if (user) return user;
 
@@ -42,6 +40,7 @@ export class AuthService {
         secret: this.configService.get<string>('jwt.secret'),
       });
     } catch (error) {
+      console.log(`verifyJtw error: ${error}`);
       return null;
     }
   }

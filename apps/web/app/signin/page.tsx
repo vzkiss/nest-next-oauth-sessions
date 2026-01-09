@@ -1,10 +1,12 @@
 'use client';
 
 import Image from 'next/image';
+import { config } from '../../lib/config';
+import Link from 'next/link';
 
 export default function SignInPage() {
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:3000/auth/login/google';
+    window.location.href = `${config.apiUrl}/auth/login/google`;
   };
 
   return (
@@ -25,9 +27,9 @@ export default function SignInPage() {
       </button>
 
       <div className="text-center text-sm">
-        <a href="/" className="cursor-pointer hover:underline">
+        <Link href="/" className="cursor-pointer hover:underline">
           Home
-        </a>
+        </Link>
       </div>
     </div>
   );

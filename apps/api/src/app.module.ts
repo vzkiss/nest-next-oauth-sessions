@@ -7,6 +7,7 @@ import configuration from './config/configuration';
 import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
   imports: [

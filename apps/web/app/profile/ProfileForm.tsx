@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import type { AuthUser } from '../context/AuthContext';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { config } from '../../lib/config';
+import Image from 'next/image';
 
 const DEFAULT_AVATAR = '/avatar.png';
 
@@ -47,18 +49,24 @@ export function ProfileForm({ user }: Props) {
   }, [user, form]);
 
   const onSubmit = async (values: ProfileFormValues) => {
-    const res = await fetch('http://localhost:3000/user/profile', {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: values.name,
-        image: values.image,
-      }),
-    });
+    try {
+      const response = await fetch(`${config.apiUrl}/user/profile`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: values.name,
+          image: values.image,
+        }),
+      });
 
-    if (res.ok) {
+      if (!response.ok) {
+        throw new Error(`Profile update failed: ${response.status}`);
+      }
+
       await fetchUser();
+    } catch (error) {
+      console.error('Profile update error:', error);
     }
   };
 
@@ -66,7 +74,7 @@ export function ProfileForm({ user }: Props) {
 
   return (
     <div className="space-y-4 rounded-3xl bg-white p-6 shadow-xs">
-      <img
+      <Image
         src={imageValue}
         alt={user.name}
         className="mx-auto h-20 w-20 rounded-full"
@@ -138,7 +146,7 @@ export function ProfileForm({ user }: Props) {
         <button
           type="submit"
           disabled={form.formState.isSubmitting}
-          className="w-full rounded-full bg-black px-6 py-3 text-white hover:bg-black/80 disabled:opacity-50"
+          className="w-full rounded-full bg-black px-6 py-3 text-white hover:bg-black/80 disabled:opacity-50 cursor-pointer"
         >
           Save changes
         </button>
