@@ -4,6 +4,8 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { ProfileForm } from './ProfileForm';
+import { config } from '../../lib/config';
+import Link from 'next/link';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -27,6 +29,32 @@ export default function ProfilePage() {
     router.replace('/');
   };
 
+  /**
+   * A simple feedback endpoint demonstrates where async message queues would be used:
+   *  **In production:** This would publish to a RabbitMQ queue for async processing by a worker service.
+   *  **Current implementation:** Logs feedback synchronously for demonstration purposes.
+   */
+  const handleFeedback = async () => {
+    try {
+      const response = await fetch(`${config.apiUrl}/feedback`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'User feedback!',
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Request failed');
+      }
+
+      alert('Thanks for the feedback!');
+    } catch (error) {
+      alert(`Feedback submission error: ${error}`);
+    }
+  };
+
   return (
     <div className="w-full grow space-y-6 text-gray-900">
       <div className="flex items-center justify-between">
@@ -41,10 +69,16 @@ export default function ProfilePage() {
 
       <ProfileForm user={user} />
 
-      <div className="text-center text-sm">
-        <a href="/" className="cursor-pointer hover:underline">
+      <div className="flex text-center text-sm justify-between">
+        <Link href="/" className="cursor-pointer hover:underline">
           Home
-        </a>
+        </Link>
+        <button
+          onClick={handleFeedback}
+          className="cursor-pointer hover:underline"
+        >
+          Feedback
+        </button>
       </div>
     </div>
   );
