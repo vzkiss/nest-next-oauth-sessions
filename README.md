@@ -1,135 +1,209 @@
-# Turborepo starter
+# XBorg Technical Challenge
 
-This Turborepo starter is maintained by the Turborepo core team.
+A full-stack application with Google OAuth authentication and simple user profile management.
 
-## Using this example
+This implementation prioritizes correctness, clarity, and convention over feature breadth or polish.
 
-Run the following command:
+## Tech Stack
 
-```sh
-npx create-turbo@latest
+- **Frontend**: Next.js (React) with TypeScript
+- **Backend**: NestJS with TypeScript
+- **Database**: PostgreSQL with TypeORM and Docker
+- **Authentication**: Google OAuth 2.0 with JWT
+- **Monorepo**: Turborepo
+
+## Prerequisites
+
+This implementation follows the requirements described in the XBorg technical challenge:
+https://xborg.notion.site/tech-challenge
+
+## Setup
+
+1. **Install dependencies:**
+
+   ```bash
+   pnpm install
+   ```
+
+2. **Generating a Secure JWT Secret**
+
+   ```bash
+   # Generate a secure random secret
+   openssl rand -base64 32
+
+   # Or using Node.js
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
+
+3. **Set up environment variables:**
+
+   Create a `.env.local` file in the root directory with the following variables:
+
+   ```env
+   # Database (local postgres)
+   DATABASE_URL=postgresql://user:password@localhost:5432/xborg
+
+   # JWT
+   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+   JWT_EXPIRES_IN=604800
+
+   # Public base URL of the backend API
+   BACKEND_URL="http://localhost:3000"
+
+   # OAuth (must match backend public URL)
+   GOOGLE_CLIENT_ID=your-google-client-id
+   GOOGLE_CLIENT_SECRET=your-google-client-secret
+   GOOGLE_CALLBACK_URL=http://localhost:3000/auth/validate/google
+
+
+   # Frontend (Next.js)
+
+   # Base URL of the frontend app (used for links / metadata if needed)
+   FRONTEND_URL="http://localhost:4000"
+
+   # API endpoint exposed to the browser
+   NEXT_PUBLIC_API_URL="http://localhost:3000"
+
+   # Docker / Local DB (must match DATABASE_URL)
+   POSTGRES_USER="postgres"
+   POSTGRES_PASSWORD="postgres"
+   POSTGRES_DB="xborg"
+   ```
+
+4. **Set up Google OAuth:**
+
+- Creating an App on [Google Cloud Console](https://console.cloud.google.com/)
+- Create a new project or select an existing one
+- Setup OAuth Consent Screen:
+  - select User type (Internal or External) click Create
+  - Fill in the App information details
+  - On the Scopes page, click Add or Remove Scopes. Select the minimum required scopes for your app and click Update, then Save and Continue.
+  - If using an external user type, add test users on the Test users page and click Save and Continue.
+    Review the summary and return to the dashboard
+- Create OAuth 2.0 credentials
+- Add `http://localhost:3000/auth/validate/google` as an authorized redirect URI
+- Copy the Client ID and Client Secret to your `.env.local`
+
+## Running the Application
+
+### Start local database (PostgreSQL via Docker):
+
+```bash
+docker compose up --build
 ```
 
-## What's inside?
+### Start both frontend and backend:
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+```bash
+pnpm dev
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+Local Development Ports:
 
+- Backend (NestJS API): http://localhost:3000
+- Frontend (Next.js): http://localhost:4000
+
+## Project Structure
+
+- `apps/api`: NestJS backend with OAuth and user profile endpoints
+- `apps/web`: Next.js frontend with signin and profile pages
+- `packages/typescript-config`: Shared TypeScript types
+- `packages/eslint-config`: Shared eslint config
+
+## API Endpoints
+
+### Authentication (Public)
+
+- `GET /auth/login/google` - Initiate Google OAuth login
+- `GET /auth/validate/google` - OAuth callback handler
+- `GET /auth/logout` - Logout user
+
+### User Profile (Private - requires JWT)
+
+- `GET /user/profile` - Get current user profile
+- `PUT /user/profile` - Update user profile
+
+## Features
+
+- ✅ Google OAuth 2.0 authentication
+- ✅ JWT-based session management with HttpOnly cookies
+- ✅ User profile display and editing
+- ✅ Persistent sessions between visits
+- ✅ Input validation and security best practices
+- ✅ TypeScript throughout
+- ✅ ESLint and Prettier configured
+
+## Baseline Security (backend)
+
+✅ Helmet ✅ CORS ✅ Global validation ✅ JWT protection on routes
+
+## Authentication
+
+The application uses JWTs stored in HttpOnly cookies.
+
+- Tokens are not accessible from JavaScript (XSS protection)
+- Cookies are automatically included in requests
+- `SameSite=lax` provides CSRF protection
+- JWT payload contains only non-sensitive identifiers
+
+This approach balances security, simplicity, and statelessness for the scope of this challenge.
+
+### Production Considerations
+
+For a production system at scale, I would add:
+
+- Short-lived access tokens + refresh tokens
+- Token rotation and revocation
+- Rate limiting and monitoring
+- HTTPS-only secure cookies
+
+### Alternative: Session-Based Auth
+
+Server-side sessions with Redis:
+
+- No tokens stored client-side
+- Session ID in HttpOnly cookie only
+- Centralized revocation
+- Trade-off: Requires Redis/session store infrastructure
+
+## Architecture Decisions (Bonus)
+
+The backend is implemented as a single NestJS application.  
+Given the scope of the challenge (authentication + profile CRUD), introducing service boundaries would add complexity without clear benefits.
+
+### When Microservices Would Make Sense
+
+In a production XBorg system, I would advocate for event-driven microservices when:
+
+- **User completes action** → action triggers business logic → Analytics tracks event → Notification service sends Discord/Slack message
+- **Profile updates** → Need to invalidate caches across multiple services
+
+I have production experience with RabbitMQ from my work at Vincit, where we used it for asynchronous workflows in enterprise SaaS products.
+
+### Feedback Endpoint (Demo)
+
+A simple feedback endpoint demonstrates where async message queues would be used:
+
+```bash
+POST /feedback
+{
+  "message": "Great app!"
+}
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+**In production:** This would publish to a RabbitMQ queue for async processing by a worker service.
+
+**Current implementation:** Returns `202 Accepted` and logs feedback to demonstrate async intent without introducing queue infrastructure.
+
+### Formatting & Linting
+
+```bash
+# Format all code
+pnpm format
+
+# Check formatting
+pnpm format:check
+
+# Lint all projects
+pnpm lint
 ```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
