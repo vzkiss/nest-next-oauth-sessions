@@ -19,8 +19,8 @@ export default function AuthCallbackPage() {
 
   return (
     <div className="w-full text-center">
-      <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
-      <p className="text-gray-600">Completing sign in...</p>
+      <div className="border-foreground mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
+      <p className="text-foreground-muted">Completing sign in...</p>
     </div>
   );
 }

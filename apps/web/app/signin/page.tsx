@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { config } from '../../lib/config';
 import Link from 'next/link';
+import { Button } from '../../components/ui/Button';
 
 export default function SignInPage() {
   const handleGoogleLogin = () => {
@@ -11,9 +12,9 @@ export default function SignInPage() {
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
-      <button
+      <Button
         onClick={handleGoogleLogin}
-        className="flex cursor-pointer items-center gap-2 rounded-full bg-black px-6 py-3 text-white hover:bg-black/80"
+        className="flex items-center gap-2 active:scale-[0.97]"
       >
         <Image
           width={20}
@@ -24,7 +25,7 @@ export default function SignInPage() {
           alt="google logo"
         />
         <span>Sign in with Google</span>
-      </button>
+      </Button>
 
       <div className="text-center text-sm">
         <Link href="/" className="cursor-pointer hover:underline">

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
 import { AuthProvider } from './context/AuthContext';
+import { Toaster } from 'sonner';
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -26,6 +27,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider>
+          <Toaster position="top-center" />
           <div className="flex h-screen flex-col items-center">
             <main className="mt-auto mb-auto flex min-w-xs">{children}</main>
             <footer className="mb-4 text-sm">

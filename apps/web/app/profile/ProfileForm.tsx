@@ -7,13 +7,14 @@ import type { AuthUser } from '../context/AuthContext';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { config } from '../../lib/config';
+import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { toast } from 'sonner';
 
 const DEFAULT_AVATAR = '/avatar.png';
 
-// basic form data validation
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
-
   image: z
     .string()
     .trim()
@@ -60,19 +61,22 @@ export function ProfileForm({ user }: Props) {
       });
 
       if (!response.ok) {
-        throw new Error(`Profile update failed: ${response.status}`);
+        toast.error(`Profile update failed: ${response.status}`);
       }
 
       await fetchUser();
-    } catch (error) {
-      console.error('Profile update error:', error);
+
+      toast.success('Profile updated successfully');
+    } catch {
+      // console.error('Profile update error:', error);
+      toast.error('Something went wrong. Please try again.');
     }
   };
 
   const imageValue = form.watch('image') || DEFAULT_AVATAR;
 
   return (
-    <div className="space-y-4 rounded-3xl bg-white p-6 shadow-xs">
+    <div className="bg-surface space-y-4 rounded-3xl p-6 shadow-xs">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageValue}
@@ -84,41 +88,26 @@ export function ProfileForm({ user }: Props) {
       />
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Email (read-only, not part of form schema) */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">
+          <label className="text-foreground-muted block text-sm font-medium">
             Email
           </label>
-          <p className="mt-1 text-gray-900">{user.email}</p>
+          <p className="text-foreground mt-1">{user.email}</p>
         </div>
 
-        {/* Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Name
-          </label>
-          <input
-            {...form.register('name')}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2"
-          />
-          {form.formState.errors.name && (
-            <p className="text-sm text-red-600">
-              {form.formState.errors.name.message}
-            </p>
-          )}
-        </div>
+        <Input
+          label="Name"
+          error={form.formState.errors.name?.message}
+          {...form.register('name')}
+        />
 
-        {/* Avatar */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Avatar URL
-          </label>
-
-          <div className="relative mt-1">
-            <input
+          <div className="relative">
+            <Input
+              label="Avatar URL"
+              error={form.formState.errors.image?.message}
+              className="pr-10"
               {...form.register('image')}
-              placeholder=""
-              className="block w-full rounded-md border border-gray-300 px-3 py-2 pr-10"
             />
 
             {form.watch('image') && (
@@ -127,29 +116,22 @@ export function ProfileForm({ user }: Props) {
                 onClick={() =>
                   form.setValue('image', null, { shouldDirty: true })
                 }
-                className="absolute inset-y-0 right-3 flex cursor-pointer items-center text-gray-400 hover:text-gray-600"
+                className="text-foreground-subtle hover:text-foreground-muted absolute top-8 right-3 flex cursor-pointer items-center"
                 aria-label="Clear avatar URL"
               >
                 ✕
               </button>
             )}
           </div>
-
-          {form.formState.errors.image && (
-            <p className="mt-1 text-sm text-red-600">
-              {form.formState.errors.image.message}
-            </p>
-          )}
         </div>
 
-        {/* Action */}
-        <button
+        <Button
           type="submit"
           disabled={form.formState.isSubmitting}
-          className="w-full rounded-full bg-black px-6 py-3 text-white hover:bg-black/80 disabled:opacity-50 cursor-pointer"
+          className="w-full"
         >
           Save changes
-        </button>
+        </Button>
       </form>
     </div>
   );
