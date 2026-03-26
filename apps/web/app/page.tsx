@@ -2,22 +2,23 @@
 
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { routes } from '@/lib/routes';
 
 export default function Home() {
   const router = useRouter();
 
   const handleSignIn = () => {
-    router.push('/signin');
+    router.push(routes.signin);
   };
 
   const handleProfile = () => {
-    router.push('/profile');
+    router.push(routes.profile);
   };
 
   return (
     <div className="flex gap-2">
       <Button
-        variant="outline"
+        // variant="outline"
         size="lg"
         onClick={handleSignIn}
         className="w-40"

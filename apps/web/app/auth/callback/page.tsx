@@ -2,7 +2,8 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '@/app/context/AuthContext';
+import { routes } from '@/lib/routes';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -11,7 +12,7 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const finalize = async () => {
       await fetchUser();
-      router.replace('/profile');
+      router.replace(routes.profile);
     };
 
     finalize();

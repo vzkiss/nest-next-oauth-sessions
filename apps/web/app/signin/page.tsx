@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { config } from '@/lib/config';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { routes } from '@/lib/routes';
 
 export default function SignInPage() {
   const handleGoogleLogin = () => {
@@ -30,7 +31,7 @@ export default function SignInPage() {
 
       <div className="text-center text-sm">
         <Link
-          href="/"
+          href={routes.home}
           className="focus-visible:ring-ring rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
         >
           Home

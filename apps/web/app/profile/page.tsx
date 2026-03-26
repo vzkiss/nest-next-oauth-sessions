@@ -7,12 +7,7 @@ import { ProfileCard } from './ProfileCard';
 import { FeedbackDialog } from './FeedbackDialog';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-
-const routesMap = {
-  home: '/',
-  signin: '/signin',
-  feedback: '/feedback',
-} as const;
+import { routes } from '@/lib/routes';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -23,7 +18,7 @@ export default function ProfilePage() {
     const load = async () => {
       const result = await fetchUser();
       if (!result) {
-        router.replace(routesMap.signin);
+        router.replace(routes.signin);
       }
     };
 
@@ -32,7 +27,7 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     await logout();
-    router.replace(routesMap.home);
+    router.replace(routes.home);
   };
 
   return (
@@ -44,7 +39,7 @@ export default function ProfilePage() {
       <div className="flex justify-between text-center text-sm">
         <div className="flex items-center gap-2">
           <Link
-            href={routesMap.home}
+            href={routes.home}
             className="focus-visible:ring-ring rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
           >
             Home
