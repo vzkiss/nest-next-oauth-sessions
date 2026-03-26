@@ -6,7 +6,33 @@ import { useAuth } from '../context/AuthContext';
 import { ProfileForm } from './ProfileForm';
 import { FeedbackDialog } from './FeedbackDialog';
 import { Button } from '../../components/ui/Button';
+import { Skeleton } from '../../components/ui/Skeleton';
 import Link from 'next/link';
+
+function ProfileCardSkeleton() {
+  return (
+    <div className="bg-surface space-y-4 rounded-3xl p-6 shadow-xs">
+      <Skeleton className="mx-auto h-20 w-20 rounded-full" />
+      <div className="space-y-4">
+        <div>
+          <Skeleton className="h-5 w-10" />
+          <Skeleton className="mt-1 h-6 w-48" />
+        </div>
+        <div>
+          <Skeleton className="h-5 w-10" />
+          <Skeleton className="mt-1 h-[42px] w-full rounded-md" />
+          <div className="mt-1 h-5" />
+        </div>
+        <div>
+          <Skeleton className="h-5 w-20" />
+          <Skeleton className="mt-1 h-[42px] w-full rounded-md" />
+          <div className="mt-1 h-5" />
+        </div>
+        <Skeleton className="h-[44px] w-full rounded-full" />
+      </div>
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -24,8 +50,6 @@ export default function ProfilePage() {
     load();
   }, [fetchUser, router]);
 
-  if (!user) return null;
-
   const handleLogout = async () => {
     await logout();
     router.replace('/');
@@ -37,7 +61,7 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-bold">Profile</h1>
       </div>
 
-      <ProfileForm user={user} />
+      {user ? <ProfileForm user={user} /> : <ProfileCardSkeleton />}
 
       <div className="flex justify-between text-center text-sm">
         <div className="flex items-center gap-2">
