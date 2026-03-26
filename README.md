@@ -36,22 +36,24 @@ openssl rand -base64 32
 
 Copy `.env.example` to `.env` at the **repository root** and fill in values (or set the same keys in your host’s env UI).
 
-| Variable              | Role                                                                                      |
-| --------------------- | ----------------------------------------------------------------------------------------- |
-| `DATABASE_URL`        | Postgres connection string                                                                |
-| `SESSION_SECRET`      | Signs session cookies                                                                     |
-| `GOOGLE_*`            | OAuth client + callback URL (must match Google Console)                                   |
-| `CLIENT_ORIGIN`       | Public origin of the Next app (CORS + redirect after OAuth); e.g. `http://localhost:4000` |
-| `NEXT_PUBLIC_API_URL` | API base URL as called from the browser; e.g. `http://localhost:3000`                     |
-| `NEXT_PUBLIC_APP_URL` | Optional canonical site URL (e.g. production); not required locally                       |
-| `POSTGRES_*`          | Used by Docker Compose; keep aligned with `DATABASE_URL`                                  |
+| Variable | Role |
+| -------- | ---- |
+| `DATABASE_URL` | Postgres connection string |
+| `SESSION_SECRET` | Signs session cookies |
+| `API_ORIGIN` | Public base URL of the **API** (no trailing slash). Google callback defaults to `{API_ORIGIN}/auth/validate/google` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth client credentials |
+| `GOOGLE_CALLBACK_URL` | Optional full OAuth callback URL if you do not use the default path under `API_ORIGIN` |
+| `CLIENT_ORIGIN` | Public origin of the **Next** app (CORS + redirect after OAuth) |
+| `NEXT_PUBLIC_API_URL` | Same API base URL as used in the browser (usually matches `API_ORIGIN`) |
+| `NEXT_PUBLIC_APP_URL` | Optional canonical site URL for the Next app |
+| `POSTGRES_*` | Docker Compose; align with `DATABASE_URL` |
 
 ### 4. Google OAuth
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), create or select a project.
 2. Configure the OAuth consent screen (scopes, test users if external).
 3. Create **OAuth 2.0 Client ID** (Web application).
-4. Add authorized redirect URI: `http://localhost:3000/auth/validate/google` (adjust host/port if your API differs).
+4. Add authorized redirect URI: `{API_ORIGIN}/auth/validate/google` (e.g. `http://localhost:3000/auth/validate/google` locally).
 5. Copy **Client ID** and **Client Secret** into `.env`.
 
 ## Running the app

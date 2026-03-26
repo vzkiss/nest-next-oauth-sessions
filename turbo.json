@@ -13,6 +13,7 @@
         "SESSION_SECRET",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
+        "API_ORIGIN",
         "GOOGLE_CALLBACK_URL",
         "CLIENT_ORIGIN",
         "NEXT_PUBLIC_API_URL",

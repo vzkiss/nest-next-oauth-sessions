@@ -27,3 +27,6 @@ coverage
 
 # Other
 .DS_Store
+
+# Root README: keep tables / wrapping as authored (pnpm format skips this file)
+/README.md

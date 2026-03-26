@@ -62,7 +62,10 @@ async function bootstrap() {
   const port = configService.get<number>('port') || 3000;
   await app.listen(port);
 
-  console.log(`Backend running on http://localhost:${port}`);
+  const publicOrigin = configService.get<string>('api.origin');
+  console.log(
+    `Backend listening on port ${port}${publicOrigin ? ` (public URL ${publicOrigin})` : ''}`
+  );
 }
 
 bootstrap().catch((err) => {

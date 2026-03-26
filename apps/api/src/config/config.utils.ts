@@ -6,7 +6,6 @@ export const validateRequiredConfig = (configService: ConfigService) => {
     { key: 'database.url', name: 'DATABASE_URL' },
     { key: 'google.clientId', name: 'GOOGLE_CLIENT_ID' },
     { key: 'google.clientSecret', name: 'GOOGLE_CLIENT_SECRET' },
-    { key: 'google.callbackUrl', name: 'GOOGLE_CALLBACK_URL' },
     { key: 'client.origin', name: 'CLIENT_ORIGIN' },
   ];
 
@@ -15,6 +14,12 @@ export const validateRequiredConfig = (configService: ConfigService) => {
     if (!configService.get(key)) {
       missing.push(name);
     }
+  }
+
+  if (!configService.get<string>('google.callbackUrl')) {
+    missing.push(
+      'API_ORIGIN (or GOOGLE_CALLBACK_URL for a custom callback URL)'
+    );
   }
 
   if (missing.length > 0) {
