@@ -13,8 +13,9 @@ export default () => ({
       process.env.GOOGLE_CALLBACK_URL ||
       'http://localhost:3000/auth/validate/google',
   },
-  frontend: {
-    url: process.env.FRONTEND_URL,
+  client: {
+    /** Public origin of the Next.js app (CORS + OAuth redirect after login). */
+    origin: process.env.CLIENT_ORIGIN,
   },
   nodeEnv: process.env.NODE_ENV || 'development',
 });

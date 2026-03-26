@@ -7,6 +7,7 @@ export const validateRequiredConfig = (configService: ConfigService) => {
     { key: 'google.clientId', name: 'GOOGLE_CLIENT_ID' },
     { key: 'google.clientSecret', name: 'GOOGLE_CLIENT_SECRET' },
     { key: 'google.callbackUrl', name: 'GOOGLE_CALLBACK_URL' },
+    { key: 'client.origin', name: 'CLIENT_ORIGIN' },
   ];
 
   const missing: string[] = [];

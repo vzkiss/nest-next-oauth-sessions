@@ -20,8 +20,8 @@ export class AuthController {
     const user = req.user as User;
     req.session.userId = user.id;
 
-    const frontendUrl = this.configService.get<string>('frontend.url');
-    res.redirect(`${frontendUrl}/auth/callback`);
+    const clientOrigin = this.configService.get<string>('client.origin');
+    res.redirect(`${clientOrigin}/auth/callback`);
   }
 
   @Get('logout')

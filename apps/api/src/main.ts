@@ -37,7 +37,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: configService.get<string>('frontend.url'),
+    origin: configService.get<string>('client.origin'),
     credentials: true,
     allowedHeaders: ['Content-Type'],
   });
