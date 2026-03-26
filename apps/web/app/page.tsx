@@ -1,19 +1,32 @@
-import Link from 'next/link';
+'use client';
 
-const styles = {
-  linkButton:
-    'bg-primary text-primary-foreground hover:bg-primary/80 focus-visible:ring-ring block w-40 cursor-pointer rounded-full px-6 py-3 text-center text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 active:scale-[0.97]',
-};
+import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
+
+  const handleSignIn = () => {
+    router.push('/signin');
+  };
+
+  const handleProfile = () => {
+    router.push('/profile');
+  };
+
   return (
     <div className="flex gap-2">
-      <Link href="signin" className={styles.linkButton}>
+      <Button
+        variant="outline"
+        size="lg"
+        onClick={handleSignIn}
+        className="w-40"
+      >
         Sign in
-      </Link>
-      <Link href="profile" className={styles.linkButton}>
+      </Button>
+      <Button size="lg" onClick={handleProfile} className="w-40">
         Profile
-      </Link>
+      </Button>
     </div>
   );
 }

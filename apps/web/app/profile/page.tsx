@@ -2,37 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../context/AuthContext';
-import { ProfileForm } from './ProfileForm';
+import { useAuth } from '@/app/context/AuthContext';
+import { ProfileCard } from './ProfileCard';
 import { FeedbackDialog } from './FeedbackDialog';
-import { Button } from '../../components/ui/Button';
-import { Skeleton } from '../../components/ui/Skeleton';
+import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
-function ProfileCardSkeleton() {
-  return (
-    <div className="bg-surface space-y-4 rounded-3xl p-6 shadow-xs">
-      <Skeleton className="mx-auto h-20 w-20 rounded-full" />
-      <div className="space-y-4">
-        <div>
-          <Skeleton className="h-5 w-10" />
-          <Skeleton className="mt-1 h-6 w-48" />
-        </div>
-        <div>
-          <Skeleton className="h-5 w-10" />
-          <Skeleton className="mt-1 h-[42px] w-full rounded-md" />
-          <div className="mt-1 h-5" />
-        </div>
-        <div>
-          <Skeleton className="h-5 w-20" />
-          <Skeleton className="mt-1 h-[42px] w-full rounded-md" />
-          <div className="mt-1 h-5" />
-        </div>
-        <Skeleton className="h-[44px] w-full rounded-full" />
-      </div>
-    </div>
-  );
-}
+const routesMap = {
+  home: '/',
+  signin: '/signin',
+  feedback: '/feedback',
+} as const;
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -43,7 +23,7 @@ export default function ProfilePage() {
     const load = async () => {
       const result = await fetchUser();
       if (!result) {
-        router.replace('/signin');
+        router.replace(routesMap.signin);
       }
     };
 
@@ -52,27 +32,25 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     await logout();
-    router.replace('/');
+    router.replace(routesMap.home);
   };
 
   return (
     <div className="text-foreground w-full grow space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Profile</h1>
-      </div>
+      <h1 className="text-2xl font-bold">Profile</h1>
 
-      {user ? <ProfileForm user={user} /> : <ProfileCardSkeleton />}
+      <ProfileCard user={user} />
 
       <div className="flex justify-between text-center text-sm">
         <div className="flex items-center gap-2">
           <Link
-            href="/"
-            className="focus-visible:ring-ring cursor-pointer rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
+            href={routesMap.home}
+            className="focus-visible:ring-ring rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
           >
             Home
           </Link>
           |
-          <Button variant="ghost" className="p-0" onClick={handleLogout}>
+          <Button variant="ghost" onClick={handleLogout}>
             Logout
           </Button>
         </div>

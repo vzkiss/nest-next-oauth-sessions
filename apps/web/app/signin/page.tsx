@@ -1,9 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { config } from '../../lib/config';
+import { config } from '@/lib/config';
 import Link from 'next/link';
-import { Button } from '../../components/ui/Button';
+import { Button } from '@/components/ui/button';
 
 export default function SignInPage() {
   const handleGoogleLogin = () => {
@@ -13,8 +13,9 @@ export default function SignInPage() {
   return (
     <div className="flex w-full flex-col items-center gap-4">
       <Button
+        size="lg"
         onClick={handleGoogleLogin}
-        className="flex items-center gap-2 active:scale-[0.97]"
+        className="flex items-center gap-2"
       >
         <Image
           width={20}
@@ -30,7 +31,7 @@ export default function SignInPage() {
       <div className="text-center text-sm">
         <Link
           href="/"
-          className="focus-visible:ring-ring cursor-pointer rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
+          className="focus-visible:ring-ring rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
         >
           Home
         </Link>

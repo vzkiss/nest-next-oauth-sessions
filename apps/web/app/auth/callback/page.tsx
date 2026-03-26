@@ -20,7 +20,7 @@ export default function AuthCallbackPage() {
   return (
     <div className="w-full text-center">
       <div className="border-foreground mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-      <p className="text-foreground-muted">Completing sign in...</p>
+      <p className="text-muted-foreground">Completing sign in...</p>
     </div>
   );
 }

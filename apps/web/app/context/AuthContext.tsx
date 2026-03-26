@@ -7,7 +7,7 @@ import {
   ReactNode,
   useCallback,
 } from 'react';
-import { config } from '../../lib/config';
+import { config } from '@/lib/config';
 
 export type AuthUser = {
   id: string;
