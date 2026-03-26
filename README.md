@@ -1,6 +1,8 @@
 # XBorg Technical Challenge
 
-Full-stack Google OAuth with NestJS and Next.js, using **server-side sessions** (not JWT) stored in PostgreSQL.
+Full-stack Google OAuth with NestJS and Next.js, using **server-side sessions** stored in PostgreSQL.
+
+Scope: clear, review-friendly example — not a full production platform. Configuration is explicit and validated at API startup; see **Production / deploy** below for what you’d still do on a real host.
 
 ## Tech Stack
 
@@ -34,15 +36,17 @@ openssl rand -base64 32
 
 ### 3. Environment variables
 
-Copy `.env.example` to `.env` at the **repository root** and fill in values (or set the same keys in your host’s env UI).
+Copy `.env.example` to **`.env.local` at the repository root**. Both the API and the Next app load that file (Nest: `apps/api/src/app.module.ts`; web: `loadEnvConfig` in `apps/web/next.config.js`). You can still set the same keys in your host’s env UI for deploys.
+
+Do not commit `.env`, `.env.local`, or real secrets; `.env.example` is the template only.
 
 | Variable | Role |
 | -------- | ---- |
 | `DATABASE_URL` | Postgres connection string |
 | `SESSION_SECRET` | Signs session cookies |
-| `API_ORIGIN` | Public base URL of the **API** (no trailing slash). Google callback defaults to `{API_ORIGIN}/auth/validate/google` |
+| `API_ORIGIN` | Public base URL of the **API** (no trailing slash); use for deploy docs / parity with `NEXT_PUBLIC_API_URL` |
+| `GOOGLE_CALLBACK_URL` | **Full** OAuth redirect URI Passport sends to Google (must match Console **and** the callback route implemented on this API) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth client credentials |
-| `GOOGLE_CALLBACK_URL` | Optional full OAuth callback URL if you do not use the default path under `API_ORIGIN` |
 | `CLIENT_ORIGIN` | Public origin of the **Next** app (CORS + redirect after OAuth) |
 | `NEXT_PUBLIC_API_URL` | Same API base URL as used in the browser (usually matches `API_ORIGIN`) |
 | `NEXT_PUBLIC_APP_URL` | Optional canonical site URL for the Next app |
@@ -53,7 +57,7 @@ Copy `.env.example` to `.env` at the **repository root** and fill in values (or 
 1. In [Google Cloud Console](https://console.cloud.google.com/), create or select a project.
 2. Configure the OAuth consent screen (scopes, test users if external).
 3. Create **OAuth 2.0 Client ID** (Web application).
-4. Add authorized redirect URI: `{API_ORIGIN}/auth/validate/google` (e.g. `http://localhost:3000/auth/validate/google` locally).
+4. Add an authorized redirect URI that matches **`GOOGLE_CALLBACK_URL`** exactly (same as the `GET …/auth/validate/google` route on the API, e.g. `http://localhost:3000/auth/validate/google` locally).
 5. Copy **Client ID** and **Client Secret** into `.env`.
 
 ## Running the app
@@ -114,6 +118,13 @@ Helmet, CORS restricted to `CLIENT_ORIGIN`, global validation pipe, session guar
 Sessions fit a **single API** that owns auth: revocation is immediate on logout, and the browser only holds a session id cookie. JWT as a _session substitute_ adds signing, expiry, and revocation tradeoffs that rarely pay off at this scale; JWTs remain useful for **service-to-service** or third-party API access where no shared session store exists.
 
 **Production extras** you’d typically add: Redis (or similar) for sessions at scale, rate limiting, observability, stricter cookie policy review.
+
+### Production / deploy
+
+- **TLS**: terminate HTTPS at your reverse proxy or platform; session cookies already use `secure` when `NODE_ENV=production`.
+- **OAuth**: register **production** `GOOGLE_CALLBACK_URL` and (if required) JavaScript origins in Google Cloud; keep `CLIENT_ORIGIN`, `API_ORIGIN`, and `NEXT_PUBLIC_API_URL` on real schemes/hosts (`https://…`).
+- **Secrets**: generate a strong `SESSION_SECRET`; rotate if leaked.
+- **Optional at scale**: Redis-backed sessions, rate limiting, structured logging, health checks — not required to understand or run this repo.
 
 ## Architecture note
 

@@ -4,8 +4,10 @@ export const validateRequiredConfig = (configService: ConfigService) => {
   const required = [
     { key: 'session.secret', name: 'SESSION_SECRET' },
     { key: 'database.url', name: 'DATABASE_URL' },
+    { key: 'api.origin', name: 'API_ORIGIN' },
     { key: 'google.clientId', name: 'GOOGLE_CLIENT_ID' },
     { key: 'google.clientSecret', name: 'GOOGLE_CLIENT_SECRET' },
+    { key: 'google.callbackUrl', name: 'GOOGLE_CALLBACK_URL' },
     { key: 'client.origin', name: 'CLIENT_ORIGIN' },
   ];
 
@@ -14,12 +16,6 @@ export const validateRequiredConfig = (configService: ConfigService) => {
     if (!configService.get(key)) {
       missing.push(name);
     }
-  }
-
-  if (!configService.get<string>('google.callbackUrl')) {
-    missing.push(
-      'API_ORIGIN (or GOOGLE_CALLBACK_URL for a custom callback URL)'
-    );
   }
 
   if (missing.length > 0) {
@@ -34,6 +30,12 @@ export const logConfig = (configService: ConfigService) => {
 
   if (nodeEnv === 'development') {
     console.log(`[config] Environment: ${nodeEnv}`);
+    const callbackUrl = configService.get<string>('google.callbackUrl');
+    if (callbackUrl) {
+      console.log(
+        `[config] Google OAuth redirect_uri (must match Console): ${callbackUrl}`
+      );
+    }
     ['session.secret', 'google.clientId', 'database.url'].forEach((key) => {
       const label = key
         .replace('session.secret', 'SESSION_SECRET')
