@@ -23,6 +23,7 @@ export class UserService {
     return await this.userRepository.save(user);
   }
 
+  // used by SessionGuard
   async findById(id: string): Promise<User | null> {
     return await this.userRepository.findOne({
       where: { id },

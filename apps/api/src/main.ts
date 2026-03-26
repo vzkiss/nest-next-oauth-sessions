@@ -1,7 +1,7 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
-import { ValidationPipe } from '@nestjs/common';
+import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import session from 'express-session';
 import pgSession from 'connect-pg-simple';
@@ -33,7 +33,7 @@ async function bootstrap() {
         sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       },
-    }),
+    })
   );
 
   app.enableCors({
@@ -51,6 +51,10 @@ async function bootstrap() {
       transform: true, // automatically transform payloads to be objects typed according to their DTO classes
     })
   );
+
+  // Serialize responses to remove sensitive data
+  // docs: https://docs.nestjs.com/techniques/serialization
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
   validateRequiredConfig(configService);
   logConfig(configService);
