@@ -1,3 +1,5 @@
+Full-stack authentication example using NestJS and Next.js, implementing Google OAuth 2.0 with JWT-based session management.
+
 # XBorg Technical Challenge
 
 A full-stack application with Google OAuth authentication and simple user profile management.
@@ -144,6 +146,8 @@ The application uses JWTs stored in HttpOnly cookies.
 - Cookies are automatically included in requests
 - `SameSite=lax` provides CSRF protection
 - JWT payload contains only non-sensitive identifiers
+
+**Note:** The `/auth/logout` endpoint clears the client-side cookie but does not invalidate the token itself — a stolen token remains valid until it expires (7 days). True revocation would require a server-side deny-list or switching to session-based auth.
 
 This approach balances security, simplicity, and statelessness for the scope of this challenge.
 

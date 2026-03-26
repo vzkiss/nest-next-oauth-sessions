@@ -69,7 +69,7 @@ export default function ProfilePage() {
 
       <ProfileForm user={user} />
 
-      <div className="flex text-center text-sm justify-between">
+      <div className="flex justify-between text-center text-sm">
         <Link href="/" className="cursor-pointer hover:underline">
           Home
         </Link>
