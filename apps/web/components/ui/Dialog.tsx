@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 type DialogProps = {
   open: boolean;
@@ -11,58 +10,39 @@ type DialogProps = {
 };
 
 export function Dialog({ open, onClose, title, children }: DialogProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    if (open) {
-      setMounted(true);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setVisible(true));
-      });
-    } else {
-      setVisible(false);
-      const timeout = setTimeout(() => setMounted(false), 200);
-      return () => clearTimeout(timeout);
+    const dialog = ref.current;
+    if (!dialog) return;
+
+    if (open && !dialog.open) {
+      dialog.showModal();
+    } else if (!open && dialog.open) {
+      dialog.close();
     }
   }, [open]);
 
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-
-    if (open) document.addEventListener('keydown', handleEsc);
-    return () => document.removeEventListener('keydown', handleEsc);
-  }, [open, onClose]);
-
-  if (!mounted) return null;
-
-  return createPortal(
-    <div
-      ref={overlayRef}
-      className={`bg-overlay fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
+  return (
+    <dialog
+      ref={ref}
+      onClose={onClose}
       onClick={(e) => {
-        if (e.target === overlayRef.current) onClose();
+        if (e.target === ref.current) onClose();
       }}
+      className="bg-surface m-auto w-full max-w-md rounded-2xl p-6 shadow-lg backdrop:bg-black/40 backdrop:backdrop-blur-sm"
     >
-      <div
-        className={`bg-surface w-full max-w-md rounded-2xl p-6 shadow-lg transition-all duration-200 ${visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-foreground text-lg font-semibold">{title}</h2>
-          <button
-            onClick={onClose}
-            className="text-foreground-subtle hover:text-foreground-muted cursor-pointer transition-colors active:scale-[0.97]"
-            aria-label="Close"
-          >
-            ✕
-          </button>
-        </div>
-        {children}
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-foreground text-lg font-semibold">{title}</h2>
+        <button
+          onClick={onClose}
+          className="text-foreground-subtle hover:text-foreground-muted focus-visible:ring-ring cursor-pointer rounded-md p-1 text-lg transition-colors focus-visible:ring-2 focus-visible:outline-none active:scale-[0.90]"
+          aria-label="Close"
+        >
+          ✕
+        </button>
       </div>
-    </div>,
-    document.body
+      {children}
+    </dialog>
   );
 }

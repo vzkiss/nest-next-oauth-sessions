@@ -65,7 +65,10 @@ export default function ProfilePage() {
 
       <div className="flex justify-between text-center text-sm">
         <div className="flex items-center gap-2">
-          <Link href="/" className="cursor-pointer hover:underline">
+          <Link
+            href="/"
+            className="focus-visible:ring-ring cursor-pointer rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
+          >
             Home
           </Link>
           |

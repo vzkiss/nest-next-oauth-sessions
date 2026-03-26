@@ -59,7 +59,6 @@ export function FeedbackDialog({ open, onClose }: Props) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <Textarea
           id="feedback-message"
-          // label="Message"
           rows={4}
           placeholder="What's on your mind?"
           error={form.formState.errors.message?.message}

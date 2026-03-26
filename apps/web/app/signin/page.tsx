@@ -28,7 +28,10 @@ export default function SignInPage() {
       </Button>
 
       <div className="text-center text-sm">
-        <Link href="/" className="cursor-pointer hover:underline">
+        <Link
+          href="/"
+          className="focus-visible:ring-ring cursor-pointer rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
+        >
           Home
         </Link>
       </div>
