@@ -1,11 +1,10 @@
-// apps/api/src/feedback/feedback.controller.ts
-import { Controller, Post, Body, UseGuards, HttpCode } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+import { Controller, Post, Body, HttpCode, UseGuards } from '@nestjs/common';
+import { SessionGuard } from '../auth/guards/session.guard';
 
 @Controller('feedback')
 export class FeedbackController {
   @Post()
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(SessionGuard)
   @HttpCode(202)
   async submitFeedback(@Body() data: { message: string }) {
     // In production: Publish to RabbitMQ queue - implemented under /apps/worker/

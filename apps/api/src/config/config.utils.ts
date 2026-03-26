@@ -1,10 +1,8 @@
 import { ConfigService } from '@nestjs/config';
 
-// Simple logging for dev debugging
-
 export const validateRequiredConfig = (configService: ConfigService) => {
   const required = [
-    { key: 'jwt.secret', name: 'JWT_SECRET' },
+    { key: 'session.secret', name: 'SESSION_SECRET' },
     { key: 'database.url', name: 'DATABASE_URL' },
     { key: 'google.clientId', name: 'GOOGLE_CLIENT_ID' },
     { key: 'google.clientSecret', name: 'GOOGLE_CLIENT_SECRET' },
@@ -30,9 +28,9 @@ export const logConfig = (configService: ConfigService) => {
 
   if (nodeEnv === 'development') {
     console.log(`[config] Environment: ${nodeEnv}`);
-    ['jwt.secret', 'google.clientId', 'database.url'].forEach((key) => {
+    ['session.secret', 'google.clientId', 'database.url'].forEach((key) => {
       const label = key
-        .replace('jwt.secret', 'JWT_SECRET')
+        .replace('session.secret', 'SESSION_SECRET')
         .replace('google.clientId', 'GOOGLE_CLIENT_ID')
         .replace('database.url', 'DATABASE_URL');
       console.log(
@@ -41,9 +39,8 @@ export const logConfig = (configService: ConfigService) => {
       );
     });
   } else {
-    // In production, only log critical missing configs
-    if (!configService.get('jwt.secret')) {
-      console.error('[config] ✗ JWT_SECRET is missing!');
+    if (!configService.get('session.secret')) {
+      console.error('[config] ✗ SESSION_SECRET is missing!');
     }
     if (!configService.get('database.url')) {
       console.error('[config] ✗ DATABASE_URL is missing!');

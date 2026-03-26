@@ -1,4 +1,4 @@
-Full-stack authentication example using NestJS and Next.js, implementing Google OAuth 2.0 with JWT-based session management.
+Full-stack authentication example using NestJS and Next.js, implementing Google OAuth 2.0 with server-side sessions.
 
 # XBorg Technical Challenge
 
@@ -11,7 +11,7 @@ This implementation prioritizes correctness, clarity, and convention over featur
 - **Frontend**: Next.js (React) with TypeScript
 - **Backend**: NestJS with TypeScript
 - **Database**: PostgreSQL with TypeORM and Docker
-- **Authentication**: Google OAuth 2.0 with JWT
+- **Authentication**: Google OAuth 2.0 with server-side sessions
 - **Monorepo**: Turborepo
 
 ## Prerequisites
@@ -27,14 +27,10 @@ https://xborg.notion.site/tech-challenge
    pnpm install
    ```
 
-2. **Generating a Secure JWT Secret**
+2. **Generate a session secret:**
 
    ```bash
-   # Generate a secure random secret
    openssl rand -base64 32
-
-   # Or using Node.js
-   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
    ```
 
 3. **Set up environment variables:**
@@ -45,9 +41,8 @@ https://xborg.notion.site/tech-challenge
    # Database (local postgres)
    DATABASE_URL=postgresql://user:password@localhost:5432/xborg
 
-   # JWT
-   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-   JWT_EXPIRES_IN=604800
+   # Session
+   SESSION_SECRET=your-session-secret-change-this-in-production
 
    # Public base URL of the backend API
    BACKEND_URL="http://localhost:3000"
@@ -119,7 +114,7 @@ Local Development Ports:
 - `GET /auth/validate/google` - OAuth callback handler
 - `GET /auth/logout` - Logout user
 
-### User Profile (Private - requires JWT)
+### User Profile (Private - requires authentication)
 
 - `GET /user/profile` - Get current user profile
 - `PUT /user/profile` - Update user profile
@@ -127,7 +122,8 @@ Local Development Ports:
 ## Features
 
 - ✅ Google OAuth 2.0 authentication
-- ✅ JWT-based session management with HttpOnly cookies
+- ✅ Server-side sessions with HttpOnly cookies
+- ✅ Instant session revocation on logout
 - ✅ User profile display and editing
 - ✅ Persistent sessions between visits
 - ✅ Input validation and security best practices
@@ -136,38 +132,28 @@ Local Development Ports:
 
 ## Baseline Security (backend)
 
-✅ Helmet ✅ CORS ✅ Global validation ✅ JWT protection on routes
+✅ Helmet ✅ CORS ✅ Global validation ✅ Session-based route protection
 
 ## Authentication
 
-The application uses JWTs stored in HttpOnly cookies.
+The application uses server-side sessions via `express-session`, backed by PostgreSQL (`connect-pg-simple`). After Google OAuth login, the user's ID is stored in the session. A session ID cookie (`connect.sid`) is sent to the browser.
 
-- Tokens are not accessible from JavaScript (XSS protection)
-- Cookies are automatically included in requests
-- `SameSite=lax` provides CSRF protection
-- JWT payload contains only non-sensitive identifiers
+- **HttpOnly cookie** — not accessible from JavaScript (XSS protection)
+- **Automatic** — cookies are included in requests via `credentials: 'include'`
+- **SameSite=lax** — CSRF protection
+- **Instant revocation** — logout destroys the session server-side; no stale tokens
+- **Persistent** — sessions survive server restarts (stored in PostgreSQL)
 
-**Note:** The `/auth/logout` endpoint clears the client-side cookie but does not invalidate the token itself — a stolen token remains valid until it expires (7 days). True revocation would require a server-side deny-list or switching to session-based auth.
-
-This approach balances security, simplicity, and statelessness for the scope of this challenge.
+This approach was chosen over JWT because the app is a single-server monolith — stateless tokens add complexity (signing, revocation workarounds) without providing meaningful scalability benefits at this scale.
 
 ### Production Considerations
 
 For a production system at scale, I would add:
 
-- Short-lived access tokens + refresh tokens
-- Token rotation and revocation
+- Redis session store for faster lookups at high concurrency
 - Rate limiting and monitoring
 - HTTPS-only secure cookies
-
-### Alternative: Session-Based Auth
-
-Server-side sessions with Redis:
-
-- No tokens stored client-side
-- Session ID in HttpOnly cookie only
-- Centralized revocation
-- Trade-off: Requires Redis/session store infrastructure
+- Session rotation on privilege changes
 
 ## Architecture Decisions (Bonus)
 

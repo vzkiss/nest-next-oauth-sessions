@@ -1,14 +1,10 @@
-// setup config
 export default () => ({
   port: parseInt(process.env.PORT || '3000', 10),
   database: {
     url: process.env.DATABASE_URL,
   },
-  jwt: {
-    secret: process.env.JWT_SECRET,
-    expiresIn: process.env.JWT_EXPIRES_IN
-      ? parseInt(process.env.JWT_EXPIRES_IN, 10)
-      : 604800, // 7 days
+  session: {
+    secret: process.env.SESSION_SECRET,
   },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID,

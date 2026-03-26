@@ -3,7 +3,8 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import pgSession from 'connect-pg-simple';
 import { validateRequiredConfig, logConfig } from './config/config.utils';
 
 async function bootstrap() {
@@ -11,16 +12,34 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
-  // Security: Basic security headers
-  app.use(helmet());
-  app.use(cookieParser());
+  const isProduction = configService.get<string>('nodeEnv') === 'production';
 
-  // CORS
+  const PgStore = pgSession(session);
+
+  app.use(helmet());
+
+  app.use(
+    session({
+      store: new PgStore({
+        conString: configService.get<string>('database.url'),
+        createTableIfMissing: true,
+      }),
+      secret: configService.get<string>('session.secret')!,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      },
+    }),
+  );
+
   app.enableCors({
     origin: configService.get<string>('frontend.url'),
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['Authorization'],
+    allowedHeaders: ['Content-Type'],
   });
 
   // Global validation
@@ -33,9 +52,7 @@ async function bootstrap() {
     })
   );
 
-  // Validate required environment variables
   validateRequiredConfig(configService);
-
   logConfig(configService);
 
   const port = configService.get<number>('port') || 3000;
