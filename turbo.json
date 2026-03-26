@@ -10,7 +10,7 @@
         "NODE_ENV",
         "PORT",
         "DATABASE_URL",
-        "JWT_SECRET",
+        "SESSION_SECRET",
         "JWT_EXPIRES_IN",
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
