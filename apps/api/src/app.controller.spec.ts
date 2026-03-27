@@ -15,8 +15,15 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return the API version', () => {
+      expect(appController.getRoot()).toBe({ message: 'XBorg API v1.0' });
+    });
+
+    it('should return the health status', () => {
+      expect(appController.getHealth()).toBe({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+      });
     });
   });
 });
