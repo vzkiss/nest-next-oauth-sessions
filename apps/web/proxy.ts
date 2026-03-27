@@ -1,18 +1,18 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+/** Path prefixes for routes that require a session cookie on the Next request. */
 const protectedRoutes = ['/profile'];
 
 const redirectTo = '/signin';
 
-export default async function proxy(req: NextRequest) {
+// `matcher` uses path patterns (e.g. `/profile/:path*`); `pathname` at runtime is
+// `/profile` or `/profile/...` — use `startsWith`, never `includes('/profile/:path*')`.
+export default function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
-
-  // const isProtectedRoute = protectedRoutes.includes(pathname);
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
   );
-
   const hasSession = req.cookies.has('connect.sid');
 
   if (isProtectedRoute && !hasSession) {
@@ -22,7 +22,6 @@ export default async function proxy(req: NextRequest) {
   return NextResponse.next();
 }
 
-// Routes Proxy should not run on
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|.*\\.png$).*)'],
+  matcher: ['/profile/:path*'],
 };
