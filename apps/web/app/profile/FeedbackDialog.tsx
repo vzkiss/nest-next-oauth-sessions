@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import type { CreateFeedbackDto } from '@repo/dto';
 import { apiFetch, ApiUnauthorizedError, ApiHttpError } from '@/lib/api';
 import {
   Dialog,
@@ -46,7 +47,7 @@ export function FeedbackDialog({ open, onClose }: Props) {
       await apiFetch('/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values),
+        body: JSON.stringify(values satisfies CreateFeedbackDto),
       });
 
       toast.success('Thanks for your feedback!');

@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { FeedbackService } from './feedback.service';
-import { CreateFeedbackDto } from './dtos/create-feedback.dto';
+import { CreateFeedbackDto } from '@repo/dto';
 import type { Request } from 'express';
 import { User } from '../user/user.entity';
 
