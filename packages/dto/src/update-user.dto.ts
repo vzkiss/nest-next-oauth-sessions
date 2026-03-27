@@ -1,8 +1,7 @@
 import { IsOptional, IsString, IsUrl } from 'class-validator';
 import { Transform } from 'class-transformer';
 
-// Security: Only allow updating safe fields (name, image)
-// Prevent updating googleId or other sensitive fields
+/** Only safe fields (name, image); no googleId or other sensitive fields. */
 export class UpdateUserDto {
   @IsString()
   @IsOptional()

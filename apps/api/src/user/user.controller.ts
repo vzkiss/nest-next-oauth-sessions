@@ -8,8 +8,8 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { type UserDto, UpdateUserDto } from '@repo/dto';
 import { UserService } from './user.service';
-import { UpdateUserDto } from './dtos/update-user.dto';
 import { User } from './user.entity';
 import { SessionGuard } from '../auth/guards/session.guard';
 
@@ -19,15 +19,19 @@ export class UserController {
 
   @Get('profile')
   @UseGuards(SessionGuard)
-  async getProfile(@Req() req) {
-    return req.user;
+  async getProfile(@Req() req): Promise<UserDto> {
+    return req.user as UserDto;
   }
 
   @Put('profile')
   @UseGuards(SessionGuard)
   @HttpCode(HttpStatus.OK)
-  async updateProfile(@Req() req, @Body() updateUserDto: UpdateUserDto) {
+  async updateProfile(
+    @Req() req,
+    @Body() updateUserDto: UpdateUserDto
+  ): Promise<UserDto> {
     const user = req.user as User;
-    return this.userService.update(user.id, updateUserDto);
+    const updated = await this.userService.update(user.id, updateUserDto);
+    return updated as UserDto;
   }
 }

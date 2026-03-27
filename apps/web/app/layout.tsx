@@ -6,9 +6,9 @@ import { Toaster } from 'sonner';
 import { Geist, Inter } from 'next/font/google';
 import { cn } from '@/lib/utils';
 
-const geistHeading = Geist({subsets:['latin'],variable:'--font-heading'});
+const geistHeading = Geist({ subsets: ['latin'], variable: '--font-heading' });
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -32,7 +32,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn('font-sans', "font-sans", inter.variable, geistHeading.variable)}
+      className={cn(
+        'font-sans',
+        'font-sans',
+        inter.variable,
+        geistHeading.variable
+      )}
     >
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider>

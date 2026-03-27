@@ -1,27 +1,19 @@
-'use client';
-
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/AuthContext';
+import { redirect } from 'next/navigation';
+import { validateSession } from '@/lib/validate-session';
 import { routes } from '@/lib/routes';
 
-export default function AuthCallbackPage() {
-  const router = useRouter();
-  const { fetchUser } = useAuth();
+export const dynamic = 'force-dynamic';
 
-  useEffect(() => {
-    const finalize = async () => {
-      await fetchUser();
-      router.replace(routes.profile);
-    };
+/**
+ * OAuth completes on the API; the browser lands here with the session cookie.
+ * We validate the session server-side and redirect immediately — no client JS.
+ */
+export default async function AuthCallbackPage() {
+  const session = await validateSession();
 
-    finalize();
-  }, [fetchUser, router]);
+  if (session.ok) {
+    redirect(routes.profile);
+  }
 
-  return (
-    <div className="w-full text-center">
-      <div className="border-foreground mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
-      <p className="text-muted-foreground">Completing sign in...</p>
-    </div>
-  );
+  redirect(routes.signIn);
 }

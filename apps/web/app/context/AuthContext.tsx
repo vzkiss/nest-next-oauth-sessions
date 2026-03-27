@@ -11,42 +11,45 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import {
-  apiRequest,
-  apiFetch,
-  configureApiSessionInvalidHandler,
-  ApiUnauthorizedError,
-} from '@/lib/api';
+import type { UserDto } from '@repo/dto';
+import { apiRequest, configureApiSessionInvalidHandler } from '@/lib/api';
 import { routes } from '@/lib/routes';
 
-export type AuthUser = {
-  id: string;
-  email: string;
-  name: string;
-  image?: string;
-};
-
 interface AuthContextType {
-  user: AuthUser | null;
-  fetchUser: () => Promise<AuthUser | null>;
+  user: UserDto | null;
+  updateUser: (user: UserDto | null) => void;
   logout: () => Promise<void>;
-  clearSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * AuthProvider
+ * - handles the session invalidation and redirects to the sign-in page
+ * - shows a toast message if the user was authenticated when the session expired
+ * - updates the user state
+ * - logs out the user
+ *
+ * @param children - The children components.
+ * @returns The AuthProvider component.
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const userRef = useRef<AuthUser | null>(null);
+
+  const [user, setUser] = useState<UserDto | null>(null);
+  const userRef = useRef<UserDto | null>(null);
   userRef.current = user;
 
-  const clearSession = useCallback(() => setUser(null), []);
+  const logout = useCallback(async () => {
+    await apiRequest('/auth/logout');
+    setUser(null);
+  }, []);
 
   useEffect(() => {
     configureApiSessionInvalidHandler(() => {
       const hadAuthenticatedUser = userRef.current != null;
       setUser(null);
+
       router.replace(routes.signIn);
       if (hadAuthenticatedUser) {
         toast.error('Session expired. Please sign in again.');
@@ -55,29 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => configureApiSessionInvalidHandler(undefined);
   }, [router]);
 
-  const fetchUser = useCallback(async (): Promise<AuthUser | null> => {
-    try {
-      const response = await apiFetch('/user/profile');
-      const data: AuthUser = await response.json();
-      setUser(data);
-      return data;
-    } catch (error) {
-      if (error instanceof ApiUnauthorizedError) {
-        return null;
-      }
-      console.error('Failed to fetch user:', error);
-      setUser(null);
-      return null;
-    }
-  }, []);
-
-  const logout = useCallback(async () => {
-    await apiRequest('/auth/logout');
-    setUser(null);
+  const updateUser = useCallback((user: UserDto | null) => {
+    setUser(user);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, fetchUser, logout, clearSession }}>
+    <AuthContext.Provider value={{ user, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

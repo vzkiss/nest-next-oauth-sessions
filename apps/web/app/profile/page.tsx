@@ -1,63 +1,17 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/AuthContext';
-import { ProfileCard } from './ProfileCard';
-import { FeedbackDialog } from './FeedbackDialog';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import ProfileDashboard from './ProfileDashboard';
+import { validateSession } from '@/lib/validate-session';
 import { routes } from '@/lib/routes';
 
-export default function ProfilePage() {
-  const router = useRouter();
-  const { user, fetchUser, logout } = useAuth();
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
+// force to render on every request
+export const dynamic = 'force-dynamic';
 
-  useEffect(() => {
-    const load = async () => {
-      const result = await fetchUser();
-      if (!result) {
-        router.replace(routes.signIn);
-      }
-    };
+export default async function ProfilePage() {
+  const session = await validateSession();
 
-    load();
-  }, [fetchUser, router]);
+  if (!session.ok) {
+    redirect(routes.signIn);
+  }
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace(routes.home);
-  };
-
-  return (
-    <div className="text-foreground w-full grow space-y-6">
-      <h1 className="text-2xl font-bold">Profile</h1>
-
-      <ProfileCard user={user} />
-
-      <div className="flex justify-between text-center text-sm">
-        <div className="flex items-center gap-2">
-          <Link
-            href={routes.home}
-            className="focus-visible:ring-ring rounded-sm hover:underline focus-visible:ring-2 focus-visible:outline-none"
-          >
-            Home
-          </Link>
-          |
-          <Button variant="ghost" onClick={handleLogout}>
-            Logout
-          </Button>
-        </div>
-        <Button size="sm" onClick={() => setFeedbackOpen(true)}>
-          Feedback
-        </Button>
-      </div>
-
-      <FeedbackDialog
-        open={feedbackOpen}
-        onClose={() => setFeedbackOpen(false)}
-      />
-    </div>
-  );
+  return <ProfileDashboard user={session.user} />;
 }
