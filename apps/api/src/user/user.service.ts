@@ -36,7 +36,10 @@ export class UserService {
   }
 
   async update(id: string, updateUser: UpdateUserDto): Promise<UserDto> {
-    await this.userRepository.update(id, updateUser);
+    await this.userRepository.update(id, {
+      ...updateUser,
+      image: updateUser.image ?? undefined,
+    });
     const user = await this.userRepository.findOne({ where: { id } });
 
     if (!user) {
