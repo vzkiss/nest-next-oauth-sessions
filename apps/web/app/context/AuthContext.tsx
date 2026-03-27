@@ -6,8 +6,17 @@ import {
   useState,
   ReactNode,
   useCallback,
+  useEffect,
 } from 'react';
-import { config } from '@/lib/config';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import {
+  apiRequest,
+  apiFetch,
+  configureApiSessionInvalidHandler,
+  ApiUnauthorizedError,
+} from '@/lib/api';
+import { routes } from '@/lib/routes';
 
 export type AuthUser = {
   id: string;
@@ -26,23 +35,30 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
+
+  const clearSession = useCallback(() => setUser(null), []);
+
+  useEffect(() => {
+    configureApiSessionInvalidHandler(() => {
+      setUser(null);
+      router.replace(routes.signIn);
+      toast.error('Session expired. Please sign in again.');
+    });
+    return () => configureApiSessionInvalidHandler(undefined);
+  }, [router]);
 
   const fetchUser = useCallback(async (): Promise<AuthUser | null> => {
     try {
-      const response = await fetch(`${config.apiUrl}/user/profile`, {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        setUser(null);
-        return null;
-      }
-
+      const response = await apiFetch('/user/profile');
       const data: AuthUser = await response.json();
       setUser(data);
       return data;
     } catch (error) {
+      if (error instanceof ApiUnauthorizedError) {
+        return null;
+      }
       console.error('Failed to fetch user:', error);
       setUser(null);
       return null;
@@ -50,13 +66,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
-    await fetch(`${config.apiUrl}/auth/logout`, {
-      credentials: 'include',
-    });
+    await apiRequest('/auth/logout');
     setUser(null);
   }, []);
-
-  const clearSession = useCallback(() => setUser(null), []);
 
   return (
     <AuthContext.Provider value={{ user, fetchUser, logout, clearSession }}>

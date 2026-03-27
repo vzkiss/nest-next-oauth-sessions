@@ -4,7 +4,11 @@ import { useAuth } from '@/app/context/AuthContext';
 import type { AuthUser } from '@/app/context/AuthContext';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { config } from '@/lib/config';
+import {
+  apiFetch,
+  ApiUnauthorizedError,
+  ApiHttpError,
+} from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,8 +20,6 @@ import {
 } from '@/components/ui/input-group';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
-import { routes } from '@/lib/routes';
-import { useRouter } from 'next/navigation';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -32,8 +34,7 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 function ProfileForm({ user }: { user: AuthUser }) {
-  const router = useRouter();
-  const { fetchUser, clearSession } = useAuth();
+  const { fetchUser } = useAuth();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -52,9 +53,8 @@ function ProfileForm({ user }: { user: AuthUser }) {
 
   const onSubmit = async (values: ProfileFormValues) => {
     try {
-      const response = await fetch(`${config.apiUrl}/user/profile`, {
+      await apiFetch('/user/profile', {
         method: 'PUT',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: values.name,
@@ -62,21 +62,16 @@ function ProfileForm({ user }: { user: AuthUser }) {
         }),
       });
 
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          clearSession();
-          router.replace(routes.signIn);
-          toast.error('Session expired. Please sign in again.');
-          return;
-        }
-
-        toast.error(`Profile update failed: ${response.status}`);
-        return;
-      }
-
       await fetchUser();
       toast.success('Profile updated successfully');
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiUnauthorizedError) {
+        return;
+      }
+      if (error instanceof ApiHttpError) {
+        toast.error(`Profile update failed: ${error.status}`);
+        return;
+      }
       toast.error('Something went wrong. Please try again.');
     }
   };

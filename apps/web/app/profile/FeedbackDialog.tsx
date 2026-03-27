@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import { config } from '@/lib/config';
+import { apiFetch, ApiUnauthorizedError, ApiHttpError } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,6 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/app/context/AuthContext';
-import { routes } from '@/lib/routes';
 
 const feedbackSchema = z.object({
   message: z
@@ -33,9 +30,6 @@ type Props = {
 };
 
 export function FeedbackDialog({ open, onClose }: Props) {
-  const router = useRouter();
-  const { clearSession } = useAuth();
-
   const form = useForm<FeedbackFormValues>({
     resolver: zodResolver(feedbackSchema),
     defaultValues: { message: '' },
@@ -47,27 +41,23 @@ export function FeedbackDialog({ open, onClose }: Props) {
 
   const onSubmit = async (values: FeedbackFormValues) => {
     try {
-      const response = await fetch(`${config.apiUrl}/feedback`, {
+      await apiFetch('/feedback', {
         method: 'POST',
-        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(values),
       });
 
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          clearSession();
-          router.replace(routes.signIn);
-          toast.error('Session expired. Please sign in again.');
-          return;
-        }
-
-        throw new Error('Failed to submit feedback: ' + response.statusText);
-      }
-
       toast.success('Thanks for your feedback!');
       onClose();
-    } catch {
+    } catch (error) {
+      if (error instanceof ApiUnauthorizedError) {
+        onClose();
+        return;
+      }
+      if (error instanceof ApiHttpError) {
+        toast.error(`Could not send feedback (${error.status}). Try again.`);
+        return;
+      }
       toast.error('Something went wrong. Please try again.');
     }
   };

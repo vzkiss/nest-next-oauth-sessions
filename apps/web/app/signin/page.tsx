@@ -1,14 +1,14 @@
 'use client';
 
 import Image from 'next/image';
-import { config } from '@/lib/config';
+import { apiUrl } from '@/lib/api';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/lib/routes';
 
 export default function SignInPage() {
   const handleGoogleLogin = () => {
-    window.location.href = `${config.apiUrl}/auth/login/google`;
+    window.location.href = apiUrl('/auth/login/google');
   };
 
   return (
