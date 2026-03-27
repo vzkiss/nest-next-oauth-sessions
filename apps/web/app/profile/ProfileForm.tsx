@@ -55,15 +55,10 @@ function ProfileForm() {
 
   const onSubmit = async (values: ProfileFormValues) => {
     try {
-      const updateUserDto: UpdateUserDto = {
-        name: values.name,
-        image: values.image ?? undefined,
-      };
-
       const response = await apiFetch('/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updateUserDto),
+        body: JSON.stringify({ ...(values satisfies UpdateUserDto) }),
       });
 
       if (!response.ok) {
