@@ -7,6 +7,7 @@ import {
   ReactNode,
   useCallback,
   useEffect,
+  useRef,
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -37,14 +38,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
+  const userRef = useRef<AuthUser | null>(null);
+  userRef.current = user;
 
   const clearSession = useCallback(() => setUser(null), []);
 
   useEffect(() => {
     configureApiSessionInvalidHandler(() => {
+      const hadAuthenticatedUser = userRef.current != null;
       setUser(null);
       router.replace(routes.signIn);
-      toast.error('Session expired. Please sign in again.');
+      if (hadAuthenticatedUser) {
+        toast.error('Session expired. Please sign in again.');
+      }
     });
     return () => configureApiSessionInvalidHandler(undefined);
   }, [router]);

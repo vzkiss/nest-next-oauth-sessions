@@ -26,7 +26,7 @@ Any check based only on cookies on the **Next** request is **optimistic**. It ca
 
 ## Client reconciliation
 
-[`apps/web/lib/api.ts`](../apps/web/lib/api.ts): **`apiRequest`** is transport-only (used for logout so 401 does not loop). **`apiFetch`** wraps it: on **401/403** it runs a handler registered via **`configureApiSessionInvalidHandler`** from **`AuthProvider`** (clear user, toast, redirect to sign-in), then throws **`ApiUnauthorizedError`** so callers can exit without duplicate toasts. **`logout`** stays on **`apiRequest`**.
+[`apps/web/lib/api.ts`](../apps/web/lib/api.ts): **`apiRequest`** is transport-only (used for logout so 401 does not loop). **`apiFetch`** wraps it: on **401/403** it runs a handler registered via **`configureApiSessionInvalidHandler`** from **`AuthProvider`** (clear user, redirect to sign-in; **toast only if `user` was already set**, so guests who never signed in are not told their “session expired”). Then throws **`ApiUnauthorizedError`**. **`logout`** stays on **`apiRequest`**.
 
 ## Contrast with “Next-native” auth guides
 
