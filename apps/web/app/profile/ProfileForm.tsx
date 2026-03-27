@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/input-group';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
+import { routes } from '@/lib/routes';
+import { useRouter } from 'next/navigation';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -30,7 +32,8 @@ const profileSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileSchema>;
 
 function ProfileForm({ user }: { user: AuthUser }) {
-  const { fetchUser } = useAuth();
+  const router = useRouter();
+  const { fetchUser, clearSession } = useAuth();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -60,6 +63,13 @@ function ProfileForm({ user }: { user: AuthUser }) {
       });
 
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          clearSession();
+          router.replace(routes.signIn);
+          toast.error('Session expired. Please sign in again.');
+          return;
+        }
+
         toast.error(`Profile update failed: ${response.status}`);
         return;
       }

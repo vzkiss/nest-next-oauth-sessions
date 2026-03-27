@@ -8,7 +8,7 @@ export default function Home() {
   const router = useRouter();
 
   const handleSignIn = () => {
-    router.push(routes.signin);
+    router.push(routes.signIn);
   };
 
   const handleProfile = () => {

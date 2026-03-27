@@ -1,6 +1,6 @@
 export const routes = {
   home: '/',
-  signin: '/signin',
+  signIn: '/signin',
   profile: '/profile',
   authCallback: '/auth/callback',
 } as const;

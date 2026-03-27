@@ -20,6 +20,7 @@ interface AuthContextType {
   user: AuthUser | null;
   fetchUser: () => Promise<AuthUser | null>;
   logout: () => Promise<void>;
+  clearSession: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,8 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const clearSession = useCallback(() => setUser(null), []);
+
   return (
-    <AuthContext.Provider value={{ user, fetchUser, logout }}>
+    <AuthContext.Provider value={{ user, fetchUser, logout, clearSession }}>
       {children}
     </AuthContext.Provider>
   );

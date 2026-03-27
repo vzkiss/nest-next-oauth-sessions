@@ -18,7 +18,7 @@ export default function ProfilePage() {
     const load = async () => {
       const result = await fetchUser();
       if (!result) {
-        router.replace(routes.signin);
+        router.replace(routes.signIn);
       }
     };
 
