@@ -80,7 +80,8 @@ pnpm dev
 ## Project structure
 
 - `apps/api` — NestJS API (auth, user, feedback)
-- `apps/web` — Next.js app (sign-in, profile, feedback modal)
+- `apps/web` — Next.js app (sign-in, profile, feedback modal); API calls go through [`apps/web/lib/api.ts`](apps/web/lib/api.ts)
+- `docs/` — extra notes (e.g. [`docs/auth-architecture.md`](docs/auth-architecture.md))
 - `packages/typescript-config` — shared TS config (`extends` for apps)
 - `packages/eslint-config` — shared ESLint config
 
@@ -125,6 +126,32 @@ Sessions fit a **single API** that owns auth: revocation is immediate on logout,
 - **OAuth**: register **production** `GOOGLE_CALLBACK_URL` and (if required) JavaScript origins in Google Cloud; keep `CLIENT_ORIGIN`, `API_ORIGIN`, and `NEXT_PUBLIC_API_URL` on real schemes/hosts (`https://…`).
 - **Secrets**: generate a strong `SESSION_SECRET`; rotate if leaked.
 - **Optional at scale**: Redis-backed sessions, rate limiting, structured logging, health checks — not required to understand or run this repo.
+
+## Auth, sessions, and cookies (cross-origin)
+
+The **login session is owned by the Nest API**, not by Next.js. After Google OAuth, [`express-session`](https://github.com/expressjs/session) sets an HttpOnly cookie (default name **`connect.sid`**) on the **API origin**. [**connect-pg-simple**](https://github.com/voxpelli/node-connect-pg-simple) stores session rows in Postgres; it does **not** define the cookie—that comes from `express-session` (see [`apps/api/src/main.ts`](apps/api/src/main.ts)).
+
+The web app calls the API with **`credentials: 'include'`** (via [`apps/web/lib/api.ts`](apps/web/lib/api.ts): **`apiRequest`** / **`apiFetch`**) so the browser sends that cookie on `localhost:3000` (or your deployed API URL). **`apiFetch`** centralizes **401/403** handling (registered from **`AuthProvider`**). Next **Server Components** do not automatically see the API session cookie unless you add a BFF or same-origin proxy; client state + API **`401`** responses are the practical source of truth for the UI.
+
+If you use [`apps/web/proxy.ts`](apps/web/proxy.ts), treat it as an **optimistic** gate (e.g. cookie present on the Next request). It cannot know whether the session row still exists in the database—**`SessionGuard` on the API** enforces that and returns **`401`** when the session is invalid. The client clears local auth state and redirects to sign-in when it receives **`401` / `403`** on authenticated calls.
+
+More detail (draft): [`docs/auth-architecture.md`](docs/auth-architecture.md).
+
+```mermaid
+flowchart TB
+  subgraph browser [Browser]
+    NextUI[Next.js_UI]
+  end
+  subgraph api [Nest_API]
+    ExpressSession[express_session]
+    PgStore[connect_pg_simple]
+  end
+  DB[(Postgres)]
+  NextUI -->|"fetch_apiRequest_credentials_include"| ExpressSession
+  ExpressSession -->|"Set_Cookie_connect_sid"| browser
+  ExpressSession --> PgStore
+  PgStore --> DB
+```
 
 ## Architecture note
 

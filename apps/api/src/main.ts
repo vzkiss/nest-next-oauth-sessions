@@ -14,6 +14,7 @@ async function bootstrap() {
 
   const isProduction = configService.get<string>('nodeEnv') === 'production';
 
+  // simple session store, default cookie name is 'connect.sid'
   const PgStore = pgSession(session);
 
   app.use(helmet());
