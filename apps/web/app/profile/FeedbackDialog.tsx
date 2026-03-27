@@ -35,9 +35,12 @@ export function FeedbackDialog({ open, onClose }: Props) {
     defaultValues: { message: '' },
   });
 
-  useEffect(() => {
-    if (open) form.reset();
-  }, [open, form]);
+  const onOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      form.reset();
+      onClose();
+    }
+  };
 
   const onSubmit = async (values: FeedbackFormValues) => {
     try {
@@ -63,7 +66,7 @@ export function FeedbackDialog({ open, onClose }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Send Feedback</DialogTitle>
@@ -87,7 +90,7 @@ export function FeedbackDialog({ open, onClose }: Props) {
             <Button
               type="button"
               variant="outline"
-              onClick={onClose}
+              onClick={() => onOpenChange(false)}
               className="flex-1"
             >
               Cancel
