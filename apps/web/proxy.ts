@@ -23,5 +23,6 @@ export default function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/profile/:path*'],
+  // Include exact `/profile` and nested paths.
+  matcher: ['/profile', '/profile/:path*'],
 };

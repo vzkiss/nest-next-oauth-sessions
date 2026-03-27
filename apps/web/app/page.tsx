@@ -12,7 +12,9 @@ export default function Home() {
   };
 
   const handleProfile = () => {
-    router.push(routes.profile);
+    // Full navigation so proxy runs on a document request. `router.push` can
+    // paint the static /profile shell before RSC applies the redirect.
+    window.location.assign(routes.profile);
   };
 
   return (
