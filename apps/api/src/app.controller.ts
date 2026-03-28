@@ -7,7 +7,7 @@ export class AppController {
 
   @Get()
   getRoot() {
-    return { message: 'XBorg API v1.0' };
+    return { message: 'API v1.0' };
   }
 
   @Get('health')

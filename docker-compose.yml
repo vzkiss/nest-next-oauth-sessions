@@ -1,10 +1,10 @@
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: xborg-postgres
+    container_name: session-demo-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: xborg
+      POSTGRES_DB: session_demo
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:

@@ -91,7 +91,7 @@ But:
 1. Rename repo
    Instead of:
 
-xborg-tech-challenge
+(old repo name)
 
 Use:
 

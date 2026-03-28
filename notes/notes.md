@@ -52,14 +52,14 @@ GOOGLE_CALLBACK_URL=http://localhost:3000/auth/validate/google
 
 ### 3. Configure OAuth Consent Screen
 
-- Application name: XBorg Challenge
+- Application name: (your app name, e.g. Session demo)
 - User support email: your email
 - Authorized domains: `localhost` (for development)
 
 ### 4. Create OAuth Client ID
 
 - Application type: **Web application**
-- Name: XBorg Challenge Local
+- Name: (your app name — local)
 
 **Authorized JavaScript origins:**
 

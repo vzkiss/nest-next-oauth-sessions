@@ -16,14 +16,17 @@ describe('AppController', () => {
 
   describe('root', () => {
     it('should return the API version', () => {
-      expect(appController.getRoot()).toBe({ message: 'XBorg API v1.0' });
+      expect(appController.getRoot()).toEqual({ message: 'API v1.0' });
     });
 
     it('should return the health status', () => {
-      expect(appController.getHealth()).toBe({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-      });
+      const health = appController.getHealth();
+      expect(health).toEqual(
+        expect.objectContaining({
+          status: 'ok',
+          timestamp: expect.any(String),
+        }),
+      );
     });
   });
 });

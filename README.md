@@ -1,4 +1,4 @@
-# XBorg Technical Challenge
+# Full-stack OAuth session demo
 
 Full-stack Google OAuth with NestJS and Next.js, using **server-side sessions** stored in PostgreSQL.
 
@@ -13,8 +13,6 @@ Scope: clear, review-friendly example — not a full production platform. Config
 - **Monorepo**: Turborepo, pnpm
 
 ## Prerequisites
-
-Challenge brief: [XBorg tech challenge](https://xborg.notion.site/tech-challenge)
 
 - Node.js ≥ 20
 - pnpm
@@ -135,7 +133,7 @@ Sessions fit a **single API** that owns auth: revocation is immediate on logout,
 
 ### Web client: TanStack Query (not implemented)
 
-Profile and other API-backed UI state use plain **`fetch`** via [`apps/web/lib/api.ts`](apps/web/lib/api.ts). For a production app, **[TanStack Query](https://tanstack.com/query)** (React Query) is a common next step: deduplicated requests, **`refetchOnWindowFocus`** so a tab that was idle picks up changes after another device or tab updated data, and **invalidation after mutations** (e.g. after `PUT /user/profile`). It is intentionally not wired in here to keep the challenge small and dependency-light; a future pass would add a root **`QueryClientProvider`** and migrate profile load/update to **`useQuery` / `useMutation`**.
+Profile and other API-backed UI state use plain **`fetch`** via [`apps/web/lib/api.ts`](apps/web/lib/api.ts). For a production app, **[TanStack Query](https://tanstack.com/query)** (React Query) is a common next step: deduplicated requests, **`refetchOnWindowFocus`** so a tab that was idle picks up changes after another device or tab updated data, and **invalidation after mutations** (e.g. after `PUT /user/profile`). It is intentionally not wired in here to keep the scope small and dependency-light; a future pass would add a root **`QueryClientProvider`** and migrate profile load/update to **`useQuery` / `useMutation`**.
 
 ## Auth, sessions, and cookies (cross-origin)
 

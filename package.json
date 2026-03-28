@@ -1,5 +1,5 @@
 {
-  "name": "xborg-challenge",
+  "name": "oauth-session-demo",
   "private": true,
   "scripts": {
     "build": "turbo run build",
