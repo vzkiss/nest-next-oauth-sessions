@@ -3,7 +3,6 @@
 import Image from 'next/image';
 import { Suspense, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { sanitizePostLoginRedirect } from '@repo/api/auth/post-login-redirect';
 import { apiUrl } from '@/lib/api';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -48,15 +47,19 @@ function useOauthCancelled() {
  * @returns The SignInForm component.
  */
 function SignInForm() {
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect') ?? '';
+
   // run custom hook
   useOauthCancelled();
 
   const handleGoogleLogin = () => {
     const url = new URL(apiUrl('/auth/login/google'));
-    const raw = new URLSearchParams(window.location.search).get('redirect');
-    if (raw !== null && raw !== '') {
-      url.searchParams.set('redirect', sanitizePostLoginRedirect(raw));
+
+    if (redirect) {
+      url.searchParams.set('redirect', encodeURIComponent(redirect));
     }
+
     window.location.href = url.toString();
   };
 
