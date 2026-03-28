@@ -1,22 +1,58 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { sanitizePostLoginRedirect } from '@repo/dto';
 import { apiUrl } from '@/lib/api';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { routes } from '@/lib/routes';
+import { toast } from 'sonner';
 
-export default function SignInPage() {
-  const [oauthMessage, setOauthMessage] = useState<string | null>(null);
+/**
+ * Handles the oauth cancelled message
+ * if the user cancels the oauth flow, or error: access_denied
+ */
+function useOauthCancelled() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    const p = new URLSearchParams(window.location.search);
-    if (p.get('oauth') === 'cancelled') {
-      setOauthMessage('Sign-in was cancelled.');
+    if (searchParams.get('oauth') !== 'cancelled') {
+      return;
     }
-  }, []);
+
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete('oauth');
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname);
+
+    toast.error('Sign-in was cancelled.', {
+      id: 'signin-oauth-cancelled',
+      duration: Infinity,
+      dismissible: true,
+      cancel: {
+        label: 'Close',
+        onClick: () => {
+          toast.dismiss('signin-oauth-cancelled');
+        },
+      },
+    });
+  }, [router, pathname, searchParams]);
+}
+
+/**
+ * SignInForm component
+ * - renders the sign in form
+ * - handles the google login
+ * - renders the home link
+ * @returns The SignInForm component.
+ */
+function SignInForm() {
+  // run custom hook
+  useOauthCancelled();
 
   const handleGoogleLogin = () => {
     const url = new URL(apiUrl('/auth/login/google'));
@@ -29,11 +65,6 @@ export default function SignInPage() {
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
-      {oauthMessage ? (
-        <p className="text-muted-foreground text-center text-sm" role="status">
-          {oauthMessage}
-        </p>
-      ) : null}
       <Button
         size="lg"
         onClick={handleGoogleLogin}
@@ -59,5 +90,19 @@ export default function SignInPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+/**
+ * SignInPage component, wraps the SignInForm component in a suspense fallback
+ * to prevent the page from flashing while the oauth flow is in progress
+ * due to use of useSearchParams hook.
+ * @returns The SignInPage component.
+ */
+export default function SignInPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignInForm />
+    </Suspense>
   );
 }

@@ -10,7 +10,9 @@ export function oauthCallbackErrorRedirectMiddleware(
   getClientOrigin: () => string
 ) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (req.method !== 'GET' || req.path !== CALLBACK_PATH) {
+    // `curl -I` sends HEAD, not GET — treat HEAD like GET so metadata checks see 302.
+    const methodOk = req.method === 'GET' || req.method === 'HEAD';
+    if (!methodOk || req.path !== CALLBACK_PATH) {
       return next();
     }
     if (req.query['error'] !== 'access_denied') {
