@@ -32,12 +32,9 @@ function useOauthCancelled() {
     toast.error('Sign-in was cancelled.', {
       id: 'signin-oauth-cancelled',
       duration: Infinity,
-      dismissible: true,
       cancel: {
         label: 'Close',
-        onClick: () => {
-          toast.dismiss('signin-oauth-cancelled');
-        },
+        onClick: () => {},
       },
     });
   }, [router, pathname, searchParams]);
