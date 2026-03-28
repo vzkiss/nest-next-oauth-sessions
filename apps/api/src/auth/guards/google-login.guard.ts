@@ -1,7 +1,7 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
-import { sanitizePostLoginRedirect } from '../../../../../packages/api/dist/entry';
+import { sanitizeRedirect } from '../../common/safe-path.util';
 import { firstQueryValue } from '../oauth-query.util';
 
 /**
@@ -13,7 +13,7 @@ export class GoogleLoginGuard extends AuthGuard('google') {
   override async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest<Request>();
     const raw = firstQueryValue(req.query['redirect']);
-    req.session.postLoginRedirect = sanitizePostLoginRedirect(raw);
+    req.session.postLoginRedirect = sanitizeRedirect(raw);
     return (await super.canActivate(context)) as boolean;
   }
 }

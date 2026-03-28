@@ -2,10 +2,8 @@ import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import {
-  sanitizePostLoginRedirect,
-  User,
-} from '../../../../packages/api/dist/entry';
+import { User } from '@repo/api';
+import { sanitizeRedirect } from '../common/safe-path.util';
 import type { Request, Response } from 'express';
 import { GoogleLoginGuard } from './guards/google-login.guard';
 
@@ -39,7 +37,7 @@ export class AuthController {
     req.session.userId = user.id;
 
     const clientOrigin = this.configService.get<string>('client.origin');
-    const path = sanitizePostLoginRedirect(req.session.postLoginRedirect);
+    const path = sanitizeRedirect(req.session.postLoginRedirect);
     delete req.session.postLoginRedirect;
     res.redirect(`${clientOrigin}${path}`);
   }

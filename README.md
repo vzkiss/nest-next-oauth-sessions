@@ -84,7 +84,7 @@ pnpm dev
 - `apps/api` — NestJS API (auth, user, feedback)
 - `apps/web` — Next.js app; App Router groups `app/(public)/…` (e.g. `/signin`) and `app/(protected)/…` (e.g. `/profile`) — segment names in parentheses are **not** part of the URL. **`requireAuth()`** in [`lib/auth.ts`](apps/web/lib/auth.ts) gates protected RSCs (redirects to `/signin` if needed) and returns the **`User`**; it uses a React-cached profile fetch so layout + page in the **same request** share one `GET /user/profile`. Browser calls go through [`apps/web/lib/api.ts`](apps/web/lib/api.ts)
 - `docs/` — extra notes (e.g. [`docs/auth-architecture.md`](docs/auth-architecture.md))
-- `packages/api` — shared **TypeORM entities** (e.g. `User`, `Feedback`), **DTOs** for request bodies (class-validator / Nest `mapped-types`), **`sanitizePostLoginRedirect`**, and the public **`@repo/api`** package consumed by the API and typed imports in the web app
+- `packages/api` — shared **TypeORM entities** (e.g. `User`, `Feedback`), **DTOs** for request bodies (class-validator / Nest `mapped-types`), and the public **`@repo/api`** package consumed by the API and typed imports in the web app
 - `packages/typescript-config` — shared TS config (`extends` for apps)
 - `packages/eslint-config` — shared ESLint config
 
@@ -176,7 +176,7 @@ One NestJS app is enough for OAuth + profile + feedback. Splitting into microser
 
 If the user **cancels** at Google, the redirect to **`/auth/validate/google`** includes **`error=access_denied`**; Express middleware responds with **`302`** to **`/signin?oauth=cancelled`** (and keeps **`redirect`** when present) so Passport never returns a bare **401**.
 
-Post-login paths are normalized in **`@repo/api`** (`sanitizePostLoginRedirect`) so redirects stay same-origin (no open redirect).
+Post-login paths are normalized in the Nest app ([`sanitizeRedirect`](apps/api/src/common/safe-path.util.ts)) so redirects stay same-origin (no open redirect).
 
 ```text
 [ Next.js /signin?redirect=/profile ]
