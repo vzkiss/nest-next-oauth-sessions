@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import session from 'express-session';
 import pgSession from 'connect-pg-simple';
 import { validateRequiredConfig, logConfig } from './config/config.utils';
+import { oauthCallbackErrorRedirectMiddleware } from './auth/middleware/oauth-callback-error.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -35,6 +36,12 @@ async function bootstrap() {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       },
     })
+  );
+
+  app.use(
+    oauthCallbackErrorRedirectMiddleware(
+      () => configService.get<string>('client.origin')!
+    )
   );
 
   app.enableCors({

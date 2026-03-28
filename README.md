@@ -164,6 +164,8 @@ One NestJS app is enough for OAuth + profile + feedback. Splitting into microser
 3. Google redirects to **`GET /auth/validate/google`**, which must match **`GOOGLE_CALLBACK_URL`** and the Google Console authorized redirect URI.
 4. The API validates the OAuth `state`, completes Google sign-in, sets **`session.userId`**, reads **`postLoginRedirect`**, and responds with **`302`** to **`CLIENT_ORIGIN` + path** (default **`/profile`** if `redirect` was omitted or invalid). There is no separate Next.js OAuth callback page.
 
+If the user **cancels** at Google, the redirect to **`/auth/validate/google`** includes **`error=access_denied`**; Express middleware responds with **`302`** to **`/signin?oauth=cancelled`** (and keeps **`redirect`** when present) so Passport never returns a bare **401**.
+
 Post-login paths are normalized in **`@repo/dto`** (`sanitizePostLoginRedirect`) so redirects stay same-origin (no open redirect).
 
 ```text

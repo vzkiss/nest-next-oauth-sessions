@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import { sanitizePostLoginRedirect } from '@repo/dto';
 import { apiUrl } from '@/lib/api';
 import Link from 'next/link';
@@ -8,6 +9,15 @@ import { Button } from '@/components/ui/button';
 import { routes } from '@/lib/routes';
 
 export default function SignInPage() {
+  const [oauthMessage, setOauthMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    if (p.get('oauth') === 'cancelled') {
+      setOauthMessage('Sign-in was cancelled.');
+    }
+  }, []);
+
   const handleGoogleLogin = () => {
     const url = new URL(apiUrl('/auth/login/google'));
     const raw = new URLSearchParams(window.location.search).get('redirect');
@@ -19,6 +29,11 @@ export default function SignInPage() {
 
   return (
     <div className="flex w-full flex-col items-center gap-4">
+      {oauthMessage ? (
+        <p className="text-muted-foreground text-center text-sm" role="status">
+          {oauthMessage}
+        </p>
+      ) : null}
       <Button
         size="lg"
         onClick={handleGoogleLogin}
