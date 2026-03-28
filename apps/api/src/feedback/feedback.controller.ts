@@ -8,9 +8,8 @@ import {
 } from '@nestjs/common';
 import { SessionGuard } from '../auth/guards/session.guard';
 import { FeedbackService } from './feedback.service';
-import { CreateFeedbackDto } from '@repo/dto';
+import { CreateFeedbackDto, User } from '../../../../packages/api/dist/entry';
 import type { Request } from 'express';
-import { User } from '../user/user.entity';
 
 @Controller('feedback')
 export class FeedbackController {

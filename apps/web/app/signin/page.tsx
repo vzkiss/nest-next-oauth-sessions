@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { Suspense, useEffect } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { sanitizePostLoginRedirect } from '@repo/dto';
+import { sanitizePostLoginRedirect } from '@repo/api/auth/post-login-redirect';
 import { apiUrl } from '@/lib/api';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';

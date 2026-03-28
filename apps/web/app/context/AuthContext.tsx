@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { UserDto } from '@repo/dto';
+import type { UserDto } from '../../../../packages/api/dist/entry';
 import { apiRequest, configureApiSessionInvalidHandler } from '@/lib/api';
 import { routes } from '@/lib/routes';
 

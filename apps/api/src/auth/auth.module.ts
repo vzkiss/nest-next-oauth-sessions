@@ -5,7 +5,7 @@ import { GoogleLoginGuard } from './guards/google-login.guard';
 import { GoogleStrategy } from './strategies/google.srategy';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../user/user.entity';
+import { User } from '../../../../packages/api/dist/entry';
 import { UserModule } from '../user/user.module';
 
 @Module({

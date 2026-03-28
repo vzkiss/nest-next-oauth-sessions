@@ -17,7 +17,8 @@ import {
 } from '@/components/ui/input-group';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
-import { UpdateUserDto, UserDto } from '@repo/dto';
+import type { UpdateUserDto } from '@repo/api/user/dto/update-user.dto';
+import type { UserDto } from '@repo/api/user/dto/user.dto';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -58,7 +59,7 @@ function ProfileForm() {
       const response = await apiFetch('/user/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...(values satisfies UpdateUserDto) }),
+        body: JSON.stringify({ ...(values as UpdateUserDto) }),
       });
 
       if (!response.ok) {

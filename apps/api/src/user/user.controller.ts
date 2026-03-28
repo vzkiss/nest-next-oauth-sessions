@@ -8,9 +8,12 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { type UserDto, UpdateUserDto } from '@repo/dto';
+import {
+  type UserDto,
+  UpdateUserDto,
+  User,
+} from '../../../../packages/api/dist/entry';
 import { UserService } from './user.service';
-import { User } from './user.entity';
 import { SessionGuard } from '../auth/guards/session.guard';
 
 @Controller('user')

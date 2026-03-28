@@ -82,6 +82,7 @@ pnpm dev
 - `apps/api` — NestJS API (auth, user, feedback)
 - `apps/web` — Next.js app (sign-in, profile, feedback modal); API calls go through [`apps/web/lib/api.ts`](apps/web/lib/api.ts)
 - `docs/` — extra notes (e.g. [`docs/auth-architecture.md`](docs/auth-architecture.md))
+- `packages/api` — shared **TypeORM entities**, **DTOs** (class-validator), and auth helpers (`sanitizePostLoginRedirect`); imported as **`@repo/api`**
 - `packages/typescript-config` — shared TS config (`extends` for apps)
 - `packages/eslint-config` — shared ESLint config
 
@@ -127,6 +128,10 @@ Sessions fit a **single API** that owns auth: revocation is immediate on logout,
 - **Secrets**: generate a strong `SESSION_SECRET`; rotate if leaked.
 - **Optional at scale**: Redis-backed sessions, distributed rate limiting, structured logging, health checks — not required to understand or run this repo.
 
+### Web client: TanStack Query (not implemented)
+
+Profile and other API-backed UI state use plain **`fetch`** via [`apps/web/lib/api.ts`](apps/web/lib/api.ts). For a production app, **[TanStack Query](https://tanstack.com/query)** (React Query) is a common next step: deduplicated requests, **`refetchOnWindowFocus`** so a tab that was idle picks up changes after another device or tab updated data, and **invalidation after mutations** (e.g. after `PUT /user/profile`). It is intentionally not wired in here to keep the challenge small and dependency-light; a future pass would add a root **`QueryClientProvider`** and migrate profile load/update to **`useQuery` / `useMutation`**.
+
 ## Auth, sessions, and cookies (cross-origin)
 
 The **login session is owned by the Nest API**, not by Next.js. After Google OAuth, [`express-session`](https://github.com/expressjs/session) sets an HttpOnly cookie (default name **`connect.sid`**) on the **API origin**. [**connect-pg-simple**](https://github.com/voxpelli/node-connect-pg-simple) stores session rows in Postgres; it does **not** define the cookie—that comes from `express-session` (see [`apps/api/src/main.ts`](apps/api/src/main.ts)).
@@ -166,7 +171,7 @@ One NestJS app is enough for OAuth + profile + feedback. Splitting into microser
 
 If the user **cancels** at Google, the redirect to **`/auth/validate/google`** includes **`error=access_denied`**; Express middleware responds with **`302`** to **`/signin?oauth=cancelled`** (and keeps **`redirect`** when present) so Passport never returns a bare **401**.
 
-Post-login paths are normalized in **`@repo/dto`** (`sanitizePostLoginRedirect`) so redirects stay same-origin (no open redirect).
+Post-login paths are normalized in **`@repo/api`** (`sanitizePostLoginRedirect`) so redirects stay same-origin (no open redirect).
 
 ```text
 [ Next.js /signin?redirect=/profile ]

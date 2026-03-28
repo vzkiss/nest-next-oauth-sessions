@@ -10,11 +10,11 @@ import { Transform } from 'class-transformer';
 
 export class CreateUserDto {
   @IsString()
-  name!: string;
+  name: string;
 
   @IsString()
   @IsEmail()
-  email!: string;
+  email: string;
 
   @IsString()
   @IsUrl()
@@ -24,5 +24,5 @@ export class CreateUserDto {
 
   @IsUUID()
   @IsNotEmpty()
-  googleId!: string;
+  googleId: string;
 }

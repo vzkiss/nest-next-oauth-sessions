@@ -11,7 +11,7 @@
     "check-types": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@repo/dto": "workspace:*",
+    "@repo/api": "workspace:*",
     "@base-ui/react": "^1.3.0",
     "@hookform/resolvers": "^5.2.2",
     "@tailwindcss/postcss": "^4.1.18",

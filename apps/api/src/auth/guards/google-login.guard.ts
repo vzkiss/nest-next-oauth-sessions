@@ -1,7 +1,7 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
-import { sanitizePostLoginRedirect } from '@repo/dto';
+import { sanitizePostLoginRedirect } from '../../../../../packages/api/dist/entry';
 import { firstQueryValue } from '../oauth-query.util';
 
 /**

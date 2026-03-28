@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import type { UserDto } from '@repo/dto';
+import type { UserDto } from '../../../packages/api/dist/entry';
 import { apiUrl } from '@/lib/api';
 
 export type ValidateSessionResult =

@@ -2,9 +2,11 @@ import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
 import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { sanitizePostLoginRedirect } from '@repo/dto';
+import {
+  sanitizePostLoginRedirect,
+  User,
+} from '../../../../packages/api/dist/entry';
 import type { Request, Response } from 'express';
-import { User } from '../user/user.entity';
 import { GoogleLoginGuard } from './guards/google-login.guard';
 
 /** OAuth endpoints only: 5 requests per minute per IP (logout is excluded). */

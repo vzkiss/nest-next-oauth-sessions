@@ -7,7 +7,7 @@ import { FeedbackDialog } from './FeedbackDialog';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { routes } from '@/lib/routes';
-import type { UserDto } from '@repo/dto';
+import type { UserDto } from '../../../../packages/api/dist/entry';
 import { useAuth } from '../context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
