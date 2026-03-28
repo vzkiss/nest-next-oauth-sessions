@@ -1,8 +1,15 @@
-# Full-stack OAuth session demo
+# Full-stack Auth Architecture — NestJS API + Next.js (RSC) + Postgres sessions
 
-Full-stack **Google OAuth** with **NestJS** and **Next.js**, using **server-side sessions** stored in **PostgreSQL** (`express-session` + **connect-pg-simple**). The repo is a **review-friendly sample**: explicit config validation at API startup, two deployable apps (web + API), and documented auth boundaries.
+Full-stack **Google OAuth** with **NestJS API** and **Next.js (RSC)**, using server-side sessions in PostgreSQL.
 
-> **Note:** This is a **portfolio / demonstration** project — not a production SaaS. The focus is clear architecture, security-aware defaults, and runnable local setup — not feature completeness.
+Includes **cross-origin session handling** and **RSC session patterns**.
+
+This repo is a **review-friendly sample**:
+- explicit config validation at API startup  
+- two deployable apps (web + API)  
+- clearly separated trust boundaries between web and API  
+
+> **Note:** This is a portfolio / demonstration project, not a production SaaS. It focuses on clear architecture, security-aware defaults, and a runnable local setup rather than feature completeness.
 >
 > **Documentation**
 >
@@ -205,6 +212,15 @@ Helmet, CORS to **`CLIENT_ORIGIN`**, validation pipe, **`SessionGuard`**, [`Clas
 ## Auth, sessions, cross-origin (summary)
 
 The **session is owned by the Nest API** (`connect.sid` on the **API origin**). **connect-pg-simple** stores rows; it does not define the cookie ([`main.ts`](apps/api/src/main.ts)). **`apiFetch`** handles **401/403** via **`AuthProvider`**. **`requireAuth`** forwards **`cookies()`** for RSC; on failure redirects to **`/signin?redirect=/profile`** (fixed while only `/profile` is protected). **`proxy.ts`** is optimistic; **`SessionGuard`** is authoritative.
+
+### Edge cases (handled)
+
+- **Expired or revoked session:** API returns **401**; **`apiFetch`** runs the **`AuthProvider`** handler (clear user, redirect to sign-in; toast only if a user was already loaded). RSC **`requireAuth`** redirects when the profile fetch fails. **`proxy.ts`** only sees the cookie — treat **Nest 401** as the real signal.
+- **Logout:** **`GET /auth/logout`** destroys the session and clears **`connect.sid`**; the client uses **`apiRequest`** (not **`apiFetch`**) so logout does not loop through the 401 handler.
+- **OAuth denied:** **`error=access_denied`** → redirect to sign-in with **`oauth=cancelled`** ([`oauth-callback-error.middleware.ts`](apps/api/src/auth/middleware/oauth-callback-error.middleware.ts)).
+- **Unsafe post-login redirect:** [`sanitizeRedirect`](apps/api/src/common/safe-path.util.ts) on the API falls back to a safe path.
+
+More detail (client reconciliation, proxy vs document request, etc.): [`docs/auth-architecture.md`](docs/auth-architecture.md).
 
 ---
 
