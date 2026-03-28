@@ -159,20 +159,35 @@ The web app calls the API with **`credentials: 'include'`** (via [`apps/web/lib/
 
 The Next.js root **[`proxy.ts`](apps/web/proxy.ts)** is an **optimistic** gate; **`SessionGuard`** on the API is authoritative (**401**). More detail: [`docs/auth-architecture.md`](docs/auth-architecture.md).
 
+Two **separate deployable apps** (different origins in dev: web `:4000`, API `:3000`). Solid arrows: requests. Dashed: **`Set-Cookie`** on the API response.
+
 ```mermaid
 flowchart TB
-  subgraph browser [Browser]
-    NextUI[Next.js_UI]
+  subgraph WEB ["Web — Next.js (apps/web)"]
+    BR[Browser]
+    RSC[Next server RSC]
+    PX[proxy.ts]
   end
-  subgraph api [Nest_API]
-    ExpressSession[express_session]
-    PgStore[connect_pg_simple]
+
+  subgraph API ["API — NestJS (apps/api)"]
+    NEST[Nest HTTP]
+    SESS[express-session]
+    CPS[connect-pg-simple]
   end
+
+  GOOGLE[Google OAuth]
   DB[(Postgres)]
-  NextUI -->|"fetch_apiRequest_credentials_include"| ExpressSession
-  ExpressSession -->|"Set_Cookie_connect_sid"| browser
-  ExpressSession --> PgStore
-  PgStore --> DB
+
+  BR --> PX
+  BR -->|"apiRequest credentials include"| NEST
+  BR -->|"GET /auth/login/google"| NEST
+  RSC -->|"GET /user/profile Cookie forwarded"| NEST
+  NEST -->|"302"| GOOGLE
+  GOOGLE -->|"GET /auth/validate/google"| NEST
+  NEST --> SESS
+  SESS --> CPS
+  CPS --> DB
+  SESS -.->|"Set-Cookie connect.sid"| BR
 ```
 
 ## Architecture note
@@ -191,7 +206,4 @@ pnpm format:check    # Prettier check
 pnpm lint            # ESLint (workspace packages that define `lint`)
 pnpm check-types     # Turbo runs each package’s `check-types` script (web: `next typegen && tsc --noEmit`)
 
-# Optional — API tests (from repo root)
-pnpm --filter api test       # Jest unit tests
-pnpm --filter api test:e2e   # E2E (API should be reachable per Jest config)
 ```

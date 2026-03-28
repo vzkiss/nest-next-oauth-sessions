@@ -1,6 +1,6 @@
 # Auth architecture
 
-Companion to the root [README](../README.md). This file has the **full step-by-step flows**; the README keeps a short overview and the mermaid diagram.
+Companion to the root [README](../README.md). This file has the **full step-by-step flows**; the README has the **mermaid overview** (Web vs API as separate apps, OAuth, RSC, session store).
 
 ## Step-by-step flows (Web vs API)
 
