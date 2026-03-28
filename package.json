@@ -1,5 +1,5 @@
 {
-  "name": "oauth-session-demo",
+  "name": "nest-next-oauth-sessions",
   "private": true,
   "scripts": {
     "build": "turbo run build",
