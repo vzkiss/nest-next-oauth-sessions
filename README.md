@@ -7,6 +7,8 @@ Full-stack **Google OAuth** with **NestJS** and **Next.js**, using **server-side
 > **Documentation**
 >
 > - **[`docs/auth-architecture.md`](docs/auth-architecture.md)** — Step-by-step flows (ASCII), ownership, proxy vs API authority, client/RSC behavior, failure paths
+>
+> **Context:** **NestJS** and **Next.js** are wired the way you’d extend toward production — validated config, session-backed auth, guards, CORS, rate limits. The **feature set** stays small on purpose (OAuth, sessions, profile, feedback) so the implementation stays easy to review.
 
 ---
 
