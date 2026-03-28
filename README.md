@@ -74,6 +74,8 @@ docker compose up --build
 pnpm dev
 ```
 
+[Turborepo](https://turbo.build/) runs **`@repo/api` `build` once** before starting dev servers (`dependsOn: ["^build"]` in [`turbo.json`](turbo.json)), so `packages/api/dist` exists before Nest and Next boot. You will see **`@repo/api#build`** (one-shot) and **`@repo/api#dev`** (`tsc --watch`) in the task list—that is expected.
+
 - API: http://localhost:3000
 - Web: http://localhost:4000
 
@@ -82,7 +84,7 @@ pnpm dev
 - `apps/api` — NestJS API (auth, user, feedback)
 - `apps/web` — Next.js app (sign-in, profile, feedback modal); API calls go through [`apps/web/lib/api.ts`](apps/web/lib/api.ts)
 - `docs/` — extra notes (e.g. [`docs/auth-architecture.md`](docs/auth-architecture.md))
-- `packages/api` — shared **TypeORM entities**, **DTOs** (class-validator), and auth helpers (`sanitizePostLoginRedirect`); imported as **`@repo/api`**
+- `packages/api` — shared **TypeORM entities** (e.g. `User`, `Feedback`), **DTOs** for request bodies (class-validator / Nest `mapped-types`), **`sanitizePostLoginRedirect`**, and the public **`@repo/api`** package consumed by the API and typed imports in the web app
 - `packages/typescript-config` — shared TS config (`extends` for apps)
 - `packages/eslint-config` — shared ESLint config
 
@@ -113,13 +115,15 @@ pnpm dev
 
 ## Security (backend)
 
-Helmet, CORS restricted to `CLIENT_ORIGIN`, global validation pipe, session guard on private routes, serialized entities to limit exposed fields. **`/auth/*`** routes (except **`GET /auth/logout`**) are **rate-limited** (30 requests / minute / IP via [`@nestjs/throttler`](https://github.com/nestjs/throttler)); tune in [`apps/api/src/app.module.ts`](apps/api/src/app.module.ts) and [`apps/api/src/auth/auth.controller.ts`](apps/api/src/auth/auth.controller.ts). If Google returns **`error=access_denied`** (user cancelled consent), the API **redirects** to **`CLIENT_ORIGIN/signin?oauth=cancelled`** (and preserves **`redirect`** when it was stored in session).
+Helmet, CORS restricted to `CLIENT_ORIGIN`, global validation pipe, session guard on private routes, [`ClassSerializerInterceptor`](https://docs.nestjs.com/techniques/serialization) + `@Exclude()` on entities to limit exposed fields. **Rate limiting** via [`@nestjs/throttler`](https://github.com/nestjs/throttler): default **60 requests / minute / IP** globally ([`apps/api/src/app.module.ts`](apps/api/src/app.module.ts)); **`/auth/*`** is **stricter (10 / minute)** except **`GET /auth/logout`** ([`apps/api/src/auth/auth.controller.ts`](apps/api/src/auth/auth.controller.ts)). If Google returns **`error=access_denied`** (user cancelled consent), the API **redirects** to **`CLIENT_ORIGIN/signin?oauth=cancelled`** (and preserves **`redirect`** when it was stored in session).
 
 ## Sessions vs JWT
 
 Sessions fit a **single API** that owns auth: revocation is immediate on logout, and the browser only holds a session id cookie. JWT as a _session substitute_ adds signing, expiry, and revocation tradeoffs that rarely pay off at this scale; JWTs remain useful for **service-to-service** or third-party API access where no shared session store exists.
 
 **Production extras** you’d typically add: Redis (or similar) for sessions at scale, stricter or distributed rate limits (in-memory throttler resets on restart; use Redis storage for multiple instances), observability, stricter cookie policy review.
+
+**Sessions:** cookie lifetime uses a **fixed `maxAge`** from login (not a rolling/sliding session). That keeps Postgres session writes predictable for this demo; production often uses **rolling** cookies and/or Redis for high traffic.
 
 ### Production / deploy
 
@@ -192,8 +196,14 @@ Post-login paths are normalized in **`@repo/api`** (`sanitizePostLoginRedirect`)
 ## Scripts
 
 ```bash
+pnpm dev             # Turbo: all dev tasks (API, web, @repo/api watch); builds shared package first
+pnpm build           # Turbo: production build (API, web, packages)
 pnpm format          # Prettier write
 pnpm format:check    # Prettier check
-pnpm lint            # ESLint (all packages)
-pnpm check-types     # Typecheck
+pnpm lint            # ESLint (workspace packages that define `lint`)
+pnpm check-types     # Turbo runs each package’s `check-types` script (web: `next typegen && tsc --noEmit`)
+
+# Optional — API tests (from repo root)
+pnpm --filter api test       # Jest unit tests
+pnpm --filter api test:e2e   # E2E (API should be reachable per Jest config)
 ```
