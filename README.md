@@ -82,7 +82,7 @@ pnpm dev
 ## Project structure
 
 - `apps/api` — NestJS API (auth, user, feedback)
-- `apps/web` — Next.js app; App Router groups `app/(public)/…` (e.g. `/signin`) and `app/(protected)/…` (e.g. `/profile`) — segment names in parentheses are **not** part of the URL. API calls go through [`apps/web/lib/api.ts`](apps/web/lib/api.ts)
+- `apps/web` — Next.js app; App Router groups `app/(public)/…` (e.g. `/signin`) and `app/(protected)/…` (e.g. `/profile`) — segment names in parentheses are **not** part of the URL. **`requireAuth()`** in [`lib/auth.ts`](apps/web/lib/auth.ts) gates protected RSCs (redirects to `/signin` if needed) and returns the **`User`**; it uses a React-cached profile fetch so layout + page in the **same request** share one `GET /user/profile`. Browser calls go through [`apps/web/lib/api.ts`](apps/web/lib/api.ts)
 - `docs/` — extra notes (e.g. [`docs/auth-architecture.md`](docs/auth-architecture.md))
 - `packages/api` — shared **TypeORM entities** (e.g. `User`, `Feedback`), **DTOs** for request bodies (class-validator / Nest `mapped-types`), **`sanitizePostLoginRedirect`**, and the public **`@repo/api`** package consumed by the API and typed imports in the web app
 - `packages/typescript-config` — shared TS config (`extends` for apps)
@@ -109,6 +109,7 @@ pnpm dev
 
 - Google OAuth and server-side sessions (HttpOnly `connect.sid`, `SameSite=lax`, `secure` in production)
 - Sessions persisted in Postgres (survive API restarts)
+- Protected Next routes: `(protected)` layout calls **`requireAuth()`**; pages that need the user call it again for **`User`** — session lookup in [`lib/auth.ts`](apps/web/lib/auth.ts) is React-cached per request (one profile fetch)
 - Profile read/update with validation
 - Feedback submission persisted to the database
 - TypeScript, ESLint, Prettier
@@ -140,7 +141,7 @@ Profile and other API-backed UI state use plain **`fetch`** via [`apps/web/lib/a
 
 The **login session is owned by the Nest API**, not by Next.js. After Google OAuth, [`express-session`](https://github.com/expressjs/session) sets an HttpOnly cookie (default name **`connect.sid`**) on the **API origin**. [**connect-pg-simple**](https://github.com/voxpelli/node-connect-pg-simple) stores session rows in Postgres; it does **not** define the cookie—that comes from `express-session` (see [`apps/api/src/main.ts`](apps/api/src/main.ts)).
 
-The web app calls the API with **`credentials: 'include'`** (via [`apps/web/lib/api.ts`](apps/web/lib/api.ts): **`apiRequest`** / **`apiFetch`**) so the browser sends that cookie on `localhost:3000` (or your deployed API URL). **`apiFetch`** centralizes **401/403** handling (registered from **`AuthProvider`**). Next **Server Components** do not automatically see the API session cookie unless you add a BFF or same-origin proxy; client state + API **`401`** responses are the practical source of truth for the UI.
+The web app calls the API with **`credentials: 'include'`** (via [`apps/web/lib/api.ts`](apps/web/lib/api.ts): **`apiRequest`** / **`apiFetch`**) so the browser sends that cookie on `localhost:3000` (or your deployed API URL). **`apiFetch`** centralizes **401/403** handling (registered from **`AuthProvider`**). For **server** rendering, [`requireAuth`](apps/web/lib/auth.ts) forwards **`cookies()`** to `GET /user/profile` so protected RSC layouts/pages can gate routes without a same-origin BFF; the **browser** still relies on client state + **`401`** for interactive flows.
 
 If you use [`apps/web/proxy.ts`](apps/web/proxy.ts), treat it as an **optimistic** gate (e.g. cookie present on the Next request). It cannot know whether the session row still exists in the database—**`SessionGuard` on the API** enforces that and returns **`401`** when the session is invalid. The client clears local auth state and redirects to sign-in when it receives **`401` / `403`** on authenticated calls.
 

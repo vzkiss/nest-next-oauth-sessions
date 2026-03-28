@@ -1,17 +1,11 @@
-import { redirect } from 'next/navigation';
 import ProfileDashboard from './ProfileDashboard';
-import { validateSession } from '@/lib/validate-session';
-import { routes } from '@/lib/routes';
+import { requireAuth } from '@/lib/auth';
 
 // force to render on every request
 export const dynamic = 'force-dynamic';
 
 export default async function ProfilePage() {
-  const session = await validateSession();
+  const user = await requireAuth();
 
-  if (!session.ok) {
-    redirect(routes.signIn);
-  }
-
-  return <ProfileDashboard user={session.user} />;
+  return <ProfileDashboard user={user} />;
 }

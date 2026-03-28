@@ -16,7 +16,7 @@ This doc complements the root [README](../README.md). Refine as the app evolves.
 
 Locally, UI is often `http://localhost:4000` and API `http://localhost:3000`. The session cookie is scoped to the **API** host/port. The web app uses `fetch(..., { credentials: 'include' })` (centralized in [`apps/web/lib/api.ts`](../apps/web/lib/api.ts)) so the browser attaches that cookie to API requests.
 
-Next **Server Components** do not automatically participate in that cookie unless you add a BFF or shared-origin setup. This repo keeps “who is logged in” for UI in **client** state + API responses.
+**Server Components:** [`lib/auth.ts`](../apps/web/lib/auth.ts) forwards `cookies()` from `next/headers` to **`GET /user/profile`** on the API (cached per request). **`requireAuth()`** redirects to **`/signin`** when invalid and returns **`User`** when valid, so **`app/(protected)/layout.tsx`** and nested pages **dedupe** the profile fetch. Protected UI still hydrates with **`AuthProvider`** client state for interactive flows.
 
 ## Next `proxy.ts` (if enabled)
 
@@ -30,4 +30,9 @@ Any check based only on cookies on the **Next** request is **optimistic**. It ca
 
 ## Contrast with “Next-native” auth guides
 
-Patterns like `requireAuth()` + `getSession({ headers })` on the **Next** server assume the session (or JWT) is visible to Next. This project uses an **external API session** instead; the same **shape** of idea (protect routes + redirect) applies, but the **implementation** must call the API or duplicate session mechanics on Next if you need server-side guards.
+Patterns like `getSession({ headers })` on the **Next** server assume the session (or JWT) is visible to Next. Here the session lives in the **Nest** API; the Next server **re-validates** by calling the API with forwarded cookies (`requireAuth` / cached lookup in `lib/auth.ts`), analogous to a guard, without duplicating session storage on Next.
+
+## Protected layout + `cache()`
+
+- `app/(protected)/layout.tsx` runs **`await requireAuth()`** (for the redirect side effect; return value unused) so the whole segment is gated.
+- Nested pages (e.g. profile) run **`const user = await requireAuth()`** for props. React **`cache()`** on the session helper in **`lib/auth.ts`** ensures **one** `fetch` per request.
