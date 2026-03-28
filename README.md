@@ -112,6 +112,83 @@ pnpm dev
 - Feedback submission persisted to the database
 - TypeScript, ESLint, Prettier
 
+There is **no** Next.js Route Handler API under `app/api/` — **all** OAuth, sessions, and protected JSON live in the **Nest** app (`apps/api`). Next only calls that API from the browser and from RSC (`fetch` with forwarded cookies).
+
+## Auth flows: Web (Next.js) vs API (NestJS)
+
+Flows below use **this repo’s real paths** (`/signin`, not `/sign-in`; `GET /auth/login/google` and `GET /auth/validate/google`, not generic `/auth/google` names). Replace origins with your deploy URLs (`CLIENT_ORIGIN`, `API_ORIGIN` / `NEXT_PUBLIC_API_URL`).
+
+### Web (Next.js)
+
+```text
+User → GET /profile
+  ↓
+proxy.ts (Next 16 root proxy; `matcher`: `/profile/:path*`)
+  - checks for connect.sid on this request (optimistic; session row may be gone)
+  - no cookie → redirect → /signin?redirect=/profile (redirect preserves pathname + search)
+  ↓
+/signin
+  ↓
+User clicks “Continue with Google”
+  ↓
+browser navigates to API (leaves Next):
+  GET {API}/auth/login/google?redirect=...   (optional; from ?redirect= on /signin)
+  ↓
+… → NestJS + Google (see below)
+```
+
+### API (NestJS + Google OAuth)
+
+```text
+GET /auth/login/google?redirect=/profile
+  ↓
+sanitizeRedirect(raw) → safe same-origin path; stored on session as postLoginRedirect
+  Passport (state: true) adds OAuth state nonce (CSRF); not the same field as postLoginRedirect
+  ↓
+302 → Google consent screen
+```
+
+### Google → API callback
+
+```text
+Google → GET /auth/validate/google?…   (must match GOOGLE_CALLBACK_URL + Google Console)
+  ↓
+NestJS:
+  - validate OAuth state / complete Google strategy
+  - create or load user; session.userId = user.id
+  - express-session sets HttpOnly connect.sid (API origin); connect-pg-simple persists session row
+  - read postLoginRedirect from session; sanitizeRedirect again; clear postLoginRedirect
+  ↓
+302 → {CLIENT_ORIGIN}/profile   (or other sanitized path)
+```
+
+### Back to Web (Next.js)
+
+```text
+User lands on /profile (Next)
+  ↓
+app/(protected)/layout.tsx + page (RSC)
+  ↓
+requireAuth()
+  ↓
+cached auth() → GET /user/profile on API (cookies forwarded from RSC)
+  ↓
+200 + User → render protected UI
+```
+
+Client-side calls use [`apiFetch`](apps/web/lib/api.ts) (`credentials: 'include'`); **`SessionGuard`** on the API is the source of truth for **401** if the session is invalid.
+
+### What each service owns
+
+| | Next.js (`apps/web`) | NestJS (`apps/api`) |
+|---|----------------------|----------------------|
+| **Role** | UX, optimistic route gate (`proxy.ts`), sign-in page, RSC guard (`requireAuth`), UI | OAuth with Google, session cookie + DB store, **`sanitizeRedirect`**, post-login redirect |
+| **Critical guarantee** | User should not get a stable protected UI without the API accepting the session (RSC + client **401** handling) | **Redirect targets are safe** (no open redirect); identity and session creation |
+
+**One-line summary:** the **web** layer handles UX and gating; the **API** handles identity, session security, and validated redirects.
+
+If Google returns **`error=access_denied`**, middleware redirects to **`/signin?oauth=cancelled`** (see [`oauth-callback-error.middleware.ts`](apps/api/src/auth/middleware/oauth-callback-error.middleware.ts)).
+
 ## Security (backend)
 
 Helmet, CORS restricted to `CLIENT_ORIGIN`, global validation pipe, session guard on private routes, [`ClassSerializerInterceptor`](https://docs.nestjs.com/techniques/serialization) + `@Exclude()` on entities to limit exposed fields. **Rate limiting** via [`@nestjs/throttler`](https://github.com/nestjs/throttler): default **60 requests / minute / IP** globally ([`apps/api/src/app.module.ts`](apps/api/src/app.module.ts)); **`/auth/*`** is **stricter (10 / minute)** except **`GET /auth/logout`** ([`apps/api/src/auth/auth.controller.ts`](apps/api/src/auth/auth.controller.ts)). If Google returns **`error=access_denied`** (user cancelled consent), the API **redirects** to **`CLIENT_ORIGIN/signin?oauth=cancelled`** (and preserves **`redirect`** when it was stored in session).
@@ -129,6 +206,7 @@ Sessions fit a **single API** that owns auth: revocation is immediate on logout,
 - **TLS**: terminate HTTPS at your reverse proxy or platform; session cookies already use `secure` when `NODE_ENV=production`.
 - **OAuth**: register **production** `GOOGLE_CALLBACK_URL` and (if required) JavaScript origins in Google Cloud; keep `CLIENT_ORIGIN`, `API_ORIGIN`, and `NEXT_PUBLIC_API_URL` on real schemes/hosts (`https://…`).
 - **Secrets**: generate a strong `SESSION_SECRET`; rotate if leaked.
+- **Cross-subdomain cookies (optional):** locally, UI and API often differ by port; in production, if the web app and API use **different hosts** (e.g. `app.example.com` vs `api.example.com`), you typically set session **`cookie.domain`** / **`SameSite`** explicitly so the browser (and Next RSC cookie forwarding) behave as you intend — not wired in this demo.
 - **Optional at scale**: Redis-backed sessions, distributed rate limiting, structured logging, health checks — not required to understand or run this repo.
 
 ### Web client: TanStack Query (not implemented)
@@ -139,11 +217,11 @@ Profile and other API-backed UI state use plain **`fetch`** via [`apps/web/lib/a
 
 The **login session is owned by the Nest API**, not by Next.js. After Google OAuth, [`express-session`](https://github.com/expressjs/session) sets an HttpOnly cookie (default name **`connect.sid`**) on the **API origin**. [**connect-pg-simple**](https://github.com/voxpelli/node-connect-pg-simple) stores session rows in Postgres; it does **not** define the cookie—that comes from `express-session` (see [`apps/api/src/main.ts`](apps/api/src/main.ts)).
 
-The web app calls the API with **`credentials: 'include'`** (via [`apps/web/lib/api.ts`](apps/web/lib/api.ts): **`apiRequest`** / **`apiFetch`**) so the browser sends that cookie on `localhost:3000` (or your deployed API URL). **`apiFetch`** centralizes **401/403** handling (registered from **`AuthProvider`**). For **server** rendering, [`requireAuth`](apps/web/lib/auth.ts) forwards **`cookies()`** to `GET /user/profile` so protected RSC layouts/pages can gate routes without a same-origin BFF; the **browser** still relies on client state + **`401`** for interactive flows.
+The web app calls the API with **`credentials: 'include'`** (via [`apps/web/lib/api.ts`](apps/web/lib/api.ts): **`apiRequest`** / **`apiFetch`**) so the browser sends that cookie on `localhost:3000` (or your deployed API URL). **`apiFetch`** centralizes **401/403** handling (registered from **`AuthProvider`**). For **server** rendering, [`requireAuth`](apps/web/lib/auth.ts) forwards **`cookies()`** to `GET /user/profile` so protected RSC layouts/pages can gate routes without a same-origin BFF; the **browser** still relies on client state + **`401`** for interactive flows. If `requireAuth` fails, it redirects to **`/signin?redirect=/profile`** (fixed path while `/profile` is the only protected segment).
 
-If you use [`apps/web/proxy.ts`](apps/web/proxy.ts), treat it as an **optimistic** gate (e.g. cookie present on the Next request). It cannot know whether the session row still exists in the database—**`SessionGuard` on the API** enforces that and returns **`401`** when the session is invalid. The client clears local auth state and redirects to sign-in when it receives **`401` / `403`** on authenticated calls.
+The Next.js root **[`proxy.ts`](apps/web/proxy.ts)** runs for matched routes (see **Auth flows** above): **optimistic** check for **`connect.sid`** on the incoming Next request. It cannot verify the Postgres session row—**`SessionGuard`** on the API does that and returns **`401`** when invalid. The client clears local auth state and redirects to sign-in when **`apiFetch`** receives **`401` / `403`**.
 
-More detail (draft): [`docs/auth-architecture.md`](docs/auth-architecture.md).
+More detail: [`docs/auth-architecture.md`](docs/auth-architecture.md).
 
 ```mermaid
 flowchart TB
@@ -165,32 +243,7 @@ flowchart TB
 
 One NestJS app is enough for OAuth + profile + feedback. Splitting into microservices would be justified when multiple teams or scaling bottlenecks require it; async workflows (e.g. feedback → queue → worker) are the usual next step after a synchronous DB write.
 
-## OAuth redirect flow
-
-1. The user hits Next.js **`/signin`**, optionally with **`?redirect=`** (for example after [`apps/web/proxy.ts`](apps/web/proxy.ts) sends unauthenticated visitors from a protected route to `/signin?redirect=…`).
-2. **Sign in with Google** navigates the browser to **`GET /auth/login/google`** on the API (with the same `redirect` query when present). The API stores a **sanitized** post-login path in the session (`postLoginRedirect`) and starts Passport with **`state: true`**, so Google receives a **random OAuth `state`** nonce tied to that session.
-3. Google redirects to **`GET /auth/validate/google`**, which must match **`GOOGLE_CALLBACK_URL`** and the Google Console authorized redirect URI.
-4. The API validates the OAuth `state`, completes Google sign-in, sets **`session.userId`**, reads **`postLoginRedirect`**, and responds with **`302`** to **`CLIENT_ORIGIN` + path** (default **`/profile`** if `redirect` was omitted or invalid). There is no separate Next.js OAuth callback page.
-
-If the user **cancels** at Google, the redirect to **`/auth/validate/google`** includes **`error=access_denied`**; Express middleware responds with **`302`** to **`/signin?oauth=cancelled`** (and keeps **`redirect`** when present) so Passport never returns a bare **401**.
-
-Post-login paths are normalized in the Nest app ([`sanitizeRedirect`](apps/api/src/common/safe-path.util.ts)) so redirects stay same-origin (no open redirect).
-
-```text
-[ Next.js /signin?redirect=/profile ]
-              ↓
-[ Nest GET /auth/login/google ]
-              ↓  session: postLoginRedirect + OAuth state nonce
-[ Google ]
-              ↓
-[ Nest GET /auth/validate/google ]
-              ↓
-✔ session user id · Set-Cookie connect.sid
-              ↓
-302 → CLIENT_ORIGIN + /profile (or other sanitized path)
-```
-
-**Manual check:** With the API and web dev servers running, open `http://localhost:4000/signin?redirect=%2Fprofile`, finish Google sign-in, and confirm the browser lands on **`/profile`** on the web app.
+**Manual check:** With Docker, API, and web running, open `http://localhost:4000/signin?redirect=%2Fprofile`, complete Google sign-in, and confirm you land on **`/profile`** on the web app.
 
 ## Scripts
 
