@@ -54,9 +54,15 @@ Do not commit `.env`, `.env.local`, or real secrets; `.env.example` is the templ
 
 1. In [Google Cloud Console](https://console.cloud.google.com/), create or select a project.
 2. Configure the OAuth consent screen (scopes, test users if external).
+    - select User type (Internal or External) click Create
+    - Fill in the App information details
+    - On the Scopes page, click Add or Remove Scopes and select the minimum required scopes 
 3. Create **OAuth 2.0 Client ID** (Web application).
-4. Add an authorized redirect URI that matches **`GOOGLE_CALLBACK_URL`** exactly (same as the `GET …/auth/validate/google` route on the API, e.g. `http://localhost:3000/auth/validate/google` locally).
+4. Add an authorized redirect URI that matches **`GOOGLE_CALLBACK_URL`**
+    - exactly (same as the `GET …/auth/validate/google` route on the API, e.g. `http://localhost:3000/auth/validate/google` locally).
 5. Copy **Client ID** and **Client Secret** into `.env`.
+
+Follow this [step by step guide](https://dev.to/idrisakintobi/a-step-by-step-guide-to-google-oauth2-authentication-with-javascript-and-bun-4he7) with screenshots.
 
 ## Running the app
 
@@ -114,84 +120,16 @@ pnpm dev
 
 There is **no** Next.js Route Handler API under `app/api/` — **all** OAuth, sessions, and protected JSON live in the **Nest** app (`apps/api`). Next only calls that API from the browser and from RSC (`fetch` with forwarded cookies).
 
-## Auth flows: Web (Next.js) vs API (NestJS)
+## Auth flows (overview)
 
-Flows below use **this repo’s real paths** (`/signin`, not `/sign-in`; `GET /auth/login/google` and `GET /auth/validate/google`, not generic `/auth/google` names). Replace origins with your deploy URLs (`CLIENT_ORIGIN`, `API_ORIGIN` / `NEXT_PUBLIC_API_URL`).
+- **Next** — [`proxy.ts`](apps/web/proxy.ts): optimistic **`connect.sid`** check on matched routes (e.g. `/profile/:path*`). [`requireAuth()`](apps/web/lib/auth.ts): RSC gate via **`GET /user/profile`** with forwarded cookies (React-`cache()`’d). Browser: [`apiFetch` / `apiRequest`](apps/web/lib/api.ts) with `credentials: 'include'`.
+- **Nest** — OAuth entry **`GET /auth/login/google`**, callback **`GET /auth/validate/google`**, [`SessionGuard`](apps/api/src/auth/guards/session.guard.ts) on private JSON routes, [`sanitizeRedirect`](apps/api/src/common/safe-path.util.ts) for post-login URLs.
 
-### Web (Next.js)
-
-```text
-User → GET /profile
-  ↓
-proxy.ts (Next 16 root proxy; `matcher`: `/profile/:path*`)
-  - checks for connect.sid on this request (optimistic; session row may be gone)
-  - no cookie → redirect → /signin?redirect=/profile (redirect preserves pathname + search)
-  ↓
-/signin
-  ↓
-User clicks “Continue with Google”
-  ↓
-browser navigates to API (leaves Next):
-  GET {API}/auth/login/google?redirect=...   (optional; from ?redirect= on /signin)
-  ↓
-… → NestJS + Google (see below)
-```
-
-### API (NestJS + Google OAuth)
-
-```text
-GET /auth/login/google?redirect=/profile
-  ↓
-sanitizeRedirect(raw) → safe same-origin path; stored on session as postLoginRedirect
-  Passport (state: true) adds OAuth state nonce (CSRF); not the same field as postLoginRedirect
-  ↓
-302 → Google consent screen
-```
-
-### Google → API callback
-
-```text
-Google → GET /auth/validate/google?…   (must match GOOGLE_CALLBACK_URL + Google Console)
-  ↓
-NestJS:
-  - validate OAuth state / complete Google strategy
-  - create or load user; session.userId = user.id
-  - express-session sets HttpOnly connect.sid (API origin); connect-pg-simple persists session row
-  - read postLoginRedirect from session; sanitizeRedirect again; clear postLoginRedirect
-  ↓
-302 → {CLIENT_ORIGIN}/profile   (or other sanitized path)
-```
-
-### Back to Web (Next.js)
-
-```text
-User lands on /profile (Next)
-  ↓
-app/(protected)/layout.tsx + page (RSC)
-  ↓
-requireAuth()
-  ↓
-cached auth() → GET /user/profile on API (cookies forwarded from RSC)
-  ↓
-200 + User → render protected UI
-```
-
-Client-side calls use [`apiFetch`](apps/web/lib/api.ts) (`credentials: 'include'`); **`SessionGuard`** on the API is the source of truth for **401** if the session is invalid.
-
-### What each service owns
-
-| | Next.js (`apps/web`) | NestJS (`apps/api`) |
-|---|----------------------|----------------------|
-| **Role** | UX, optimistic route gate (`proxy.ts`), sign-in page, RSC guard (`requireAuth`), UI | OAuth with Google, session cookie + DB store, **`sanitizeRedirect`**, post-login redirect |
-| **Critical guarantee** | User should not get a stable protected UI without the API accepting the session (RSC + client **401** handling) | **Redirect targets are safe** (no open redirect); identity and session creation |
-
-**One-line summary:** the **web** layer handles UX and gating; the **API** handles identity, session security, and validated redirects.
-
-If Google returns **`error=access_denied`**, middleware redirects to **`/signin?oauth=cancelled`** (see [`oauth-callback-error.middleware.ts`](apps/api/src/auth/middleware/oauth-callback-error.middleware.ts)).
+**Full ASCII flows, ownership table, and edge cases:** [`docs/auth-architecture.md`](docs/auth-architecture.md).
 
 ## Security (backend)
 
-Helmet, CORS restricted to `CLIENT_ORIGIN`, global validation pipe, session guard on private routes, [`ClassSerializerInterceptor`](https://docs.nestjs.com/techniques/serialization) + `@Exclude()` on entities to limit exposed fields. **Rate limiting** via [`@nestjs/throttler`](https://github.com/nestjs/throttler): default **60 requests / minute / IP** globally ([`apps/api/src/app.module.ts`](apps/api/src/app.module.ts)); **`/auth/*`** is **stricter (10 / minute)** except **`GET /auth/logout`** ([`apps/api/src/auth/auth.controller.ts`](apps/api/src/auth/auth.controller.ts)). If Google returns **`error=access_denied`** (user cancelled consent), the API **redirects** to **`CLIENT_ORIGIN/signin?oauth=cancelled`** (and preserves **`redirect`** when it was stored in session).
+Helmet, CORS restricted to `CLIENT_ORIGIN`, global validation pipe, session guard on private routes, [`ClassSerializerInterceptor`](https://docs.nestjs.com/techniques/serialization) + `@Exclude()` on entities to limit exposed fields. **Rate limiting** via [`@nestjs/throttler`](https://github.com/nestjs/throttler): default **60 requests / minute / IP** globally ([`apps/api/src/app.module.ts`](apps/api/src/app.module.ts)); **`/auth/*`** is **stricter (10 / minute)** except **`GET /auth/logout`** ([`apps/api/src/auth/auth.controller.ts`](apps/api/src/auth/auth.controller.ts)). If Google returns **`error=access_denied`**, see [`oauth-callback-error.middleware.ts`](apps/api/src/auth/middleware/oauth-callback-error.middleware.ts) and [`docs/auth-architecture.md`](docs/auth-architecture.md) (failure / edge behavior).
 
 ## Sessions vs JWT
 
@@ -219,9 +157,7 @@ The **login session is owned by the Nest API**, not by Next.js. After Google OAu
 
 The web app calls the API with **`credentials: 'include'`** (via [`apps/web/lib/api.ts`](apps/web/lib/api.ts): **`apiRequest`** / **`apiFetch`**) so the browser sends that cookie on `localhost:3000` (or your deployed API URL). **`apiFetch`** centralizes **401/403** handling (registered from **`AuthProvider`**). For **server** rendering, [`requireAuth`](apps/web/lib/auth.ts) forwards **`cookies()`** to `GET /user/profile` so protected RSC layouts/pages can gate routes without a same-origin BFF; the **browser** still relies on client state + **`401`** for interactive flows. If `requireAuth` fails, it redirects to **`/signin?redirect=/profile`** (fixed path while `/profile` is the only protected segment).
 
-The Next.js root **[`proxy.ts`](apps/web/proxy.ts)** runs for matched routes (see **Auth flows** above): **optimistic** check for **`connect.sid`** on the incoming Next request. It cannot verify the Postgres session row—**`SessionGuard`** on the API does that and returns **`401`** when invalid. The client clears local auth state and redirects to sign-in when **`apiFetch`** receives **`401` / `403`**.
-
-More detail: [`docs/auth-architecture.md`](docs/auth-architecture.md).
+The Next.js root **[`proxy.ts`](apps/web/proxy.ts)** is an **optimistic** gate; **`SessionGuard`** on the API is authoritative (**401**). More detail: [`docs/auth-architecture.md`](docs/auth-architecture.md).
 
 ```mermaid
 flowchart TB
