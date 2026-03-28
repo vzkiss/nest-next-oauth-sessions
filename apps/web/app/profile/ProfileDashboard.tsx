@@ -7,7 +7,7 @@ import { FeedbackDialog } from './FeedbackDialog';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { routes } from '@/lib/routes';
-import type { UserDto } from '../../../../packages/api/dist/entry';
+import type { User } from '@repo/api';
 import { useAuth } from '../context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -24,7 +24,7 @@ function ProfileCardSkeleton() {
   );
 }
 
-export default function ProfileDashboard({ user }: { user: UserDto }) {
+export default function ProfileDashboard({ user }: { user: User }) {
   const router = useRouter();
   const { logout, updateUser } = useAuth();
   const [synced, setSynced] = useState(false);

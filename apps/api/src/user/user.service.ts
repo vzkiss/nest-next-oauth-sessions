@@ -1,12 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import {
-  CreateUserDto,
-  UpdateUserDto,
-  User,
-  UserDto,
-} from '../../../../packages/api/dist/entry';
+import { CreateUserDto, UpdateUserDto, User } from '@repo/api';
 
 @Injectable()
 export class UserService {
@@ -39,7 +34,7 @@ export class UserService {
     });
   }
 
-  async update(id: string, updateUser: UpdateUserDto): Promise<UserDto> {
+  async update(id: string, updateUser: UpdateUserDto): Promise<User> {
     await this.userRepository.update(id, {
       ...updateUser,
       image: updateUser.image ?? undefined,

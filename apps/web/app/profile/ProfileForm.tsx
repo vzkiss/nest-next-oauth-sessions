@@ -18,7 +18,7 @@ import {
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { UpdateUserDto } from '@repo/api/user/dto/update-user.dto';
-import type { UserDto } from '@repo/api/user/dto/user.dto';
+import type { User } from '@repo/api/user/entities/user.entity';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -67,7 +67,7 @@ function ProfileForm() {
         return;
       }
 
-      const data: UserDto = await response.json();
+      const data: User = await response.json();
       updateUser(data);
 
       toast.success('Profile updated successfully');

@@ -1,9 +1,9 @@
 import { cookies } from 'next/headers';
-import type { UserDto } from '../../../packages/api/dist/entry';
+import type { User } from '@repo/api/user/entities/user.entity';
 import { apiUrl } from '@/lib/api';
 
 export type ValidateSessionResult =
-  | { ok: true; user: UserDto }
+  | { ok: true; user: User }
   | { ok: false; error?: string };
 
 /**
@@ -26,6 +26,6 @@ export async function validateSession(): Promise<ValidateSessionResult> {
     return { ok: false };
   }
 
-  const user = (await response.json()) as UserDto;
+  const user = (await response.json()) as User;
   return { ok: true, user };
 }

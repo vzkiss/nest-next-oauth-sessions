@@ -8,11 +8,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import {
-  type UserDto,
-  UpdateUserDto,
-  User,
-} from '../../../../packages/api/dist/entry';
+import { UpdateUserDto, User } from '@repo/api';
 import { UserService } from './user.service';
 import { SessionGuard } from '../auth/guards/session.guard';
 
@@ -22,8 +18,8 @@ export class UserController {
 
   @Get('profile')
   @UseGuards(SessionGuard)
-  async getProfile(@Req() req): Promise<UserDto> {
-    return req.user as UserDto;
+  async getProfile(@Req() req): Promise<User> {
+    return req.user as User;
   }
 
   @Put('profile')
@@ -32,9 +28,8 @@ export class UserController {
   async updateProfile(
     @Req() req,
     @Body() updateUserDto: UpdateUserDto
-  ): Promise<UserDto> {
+  ): Promise<User> {
     const user = req.user as User;
-    const updated = await this.userService.update(user.id, updateUserDto);
-    return updated as UserDto;
+    return await this.userService.update(user.id, updateUserDto);
   }
 }

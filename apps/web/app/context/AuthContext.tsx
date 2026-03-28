@@ -11,13 +11,13 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import type { UserDto } from '../../../../packages/api/dist/entry';
+import type { User } from '@repo/api/user/entities/user.entity';
 import { apiRequest, configureApiSessionInvalidHandler } from '@/lib/api';
 import { routes } from '@/lib/routes';
 
 interface AuthContextType {
-  user: UserDto | null;
-  updateUser: (user: UserDto | null) => void;
+  user: User | null;
+  updateUser: (user: User | null) => void;
   logout: () => Promise<void>;
 }
 
@@ -36,8 +36,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
-  const [user, setUser] = useState<UserDto | null>(null);
-  const userRef = useRef<UserDto | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const userRef = useRef<User | null>(null);
   userRef.current = user;
 
   const logout = useCallback(async () => {
@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => configureApiSessionInvalidHandler(undefined);
   }, [router]);
 
-  const updateUser = useCallback((user: UserDto | null) => {
+  const updateUser = useCallback((user: User | null) => {
     setUser(user);
   }, []);
 
