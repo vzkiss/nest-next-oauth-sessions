@@ -112,20 +112,20 @@ pnpm dev
 
 ## Security (backend)
 
-Helmet, CORS restricted to `CLIENT_ORIGIN`, global validation pipe, session guard on private routes, serialized entities to limit exposed fields.
+Helmet, CORS restricted to `CLIENT_ORIGIN`, global validation pipe, session guard on private routes, serialized entities to limit exposed fields. **`/auth/*`** routes (except **`GET /auth/logout`**) are **rate-limited** (30 requests / minute / IP via [`@nestjs/throttler`](https://github.com/nestjs/throttler)); tune in [`apps/api/src/app.module.ts`](apps/api/src/app.module.ts) and [`apps/api/src/auth/auth.controller.ts`](apps/api/src/auth/auth.controller.ts). If Google returns **`error=access_denied`** (user cancelled consent), the API **redirects** to **`CLIENT_ORIGIN/signin?oauth=cancelled`** (and preserves **`redirect`** when it was stored in session).
 
 ## Sessions vs JWT
 
 Sessions fit a **single API** that owns auth: revocation is immediate on logout, and the browser only holds a session id cookie. JWT as a _session substitute_ adds signing, expiry, and revocation tradeoffs that rarely pay off at this scale; JWTs remain useful for **service-to-service** or third-party API access where no shared session store exists.
 
-**Production extras** you’d typically add: Redis (or similar) for sessions at scale, rate limiting, observability, stricter cookie policy review.
+**Production extras** you’d typically add: Redis (or similar) for sessions at scale, stricter or distributed rate limits (in-memory throttler resets on restart; use Redis storage for multiple instances), observability, stricter cookie policy review.
 
 ### Production / deploy
 
 - **TLS**: terminate HTTPS at your reverse proxy or platform; session cookies already use `secure` when `NODE_ENV=production`.
 - **OAuth**: register **production** `GOOGLE_CALLBACK_URL` and (if required) JavaScript origins in Google Cloud; keep `CLIENT_ORIGIN`, `API_ORIGIN`, and `NEXT_PUBLIC_API_URL` on real schemes/hosts (`https://…`).
 - **Secrets**: generate a strong `SESSION_SECRET`; rotate if leaked.
-- **Optional at scale**: Redis-backed sessions, rate limiting, structured logging, health checks — not required to understand or run this repo.
+- **Optional at scale**: Redis-backed sessions, distributed rate limiting, structured logging, health checks — not required to understand or run this repo.
 
 ## Auth, sessions, and cookies (cross-origin)
 

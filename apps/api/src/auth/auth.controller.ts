@@ -1,12 +1,16 @@
 import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
+import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { sanitizePostLoginRedirect } from '@repo/dto';
 import type { Request, Response } from 'express';
 import { User } from '../user/user.entity';
 import { GoogleLoginGuard } from './guards/google-login.guard';
 
+/** OAuth endpoints only: 5 requests per minute per IP (logout is excluded). */
 @Controller('auth')
+@UseGuards(ThrottlerGuard)
+@Throttle({ default: { limit: 5, ttl: 60_000 } })
 export class AuthController {
   constructor(private configService: ConfigService) {}
 
@@ -46,6 +50,7 @@ export class AuthController {
    * @returns - The response
    */
   @Get('logout')
+  @SkipThrottle()
   async logout(@Req() req: Request, @Res() res: Response) {
     req.session.destroy((err) => {
       if (err) {

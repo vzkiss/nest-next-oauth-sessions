@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
@@ -16,6 +17,12 @@ import { FeedbackModule } from './feedback/feedback.module';
       load: [configuration],
       envFilePath: join(__dirname, '../../../.env.local'),
     }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60_000, // 1 minute
+        limit: 60, // 60 requests
+      }, // per IP
+    ]),
     DatabaseModule,
     AuthModule,
     UserModule,
