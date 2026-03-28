@@ -232,3 +232,16 @@ pnpm format:check    # Prettier check
 pnpm lint            # ESLint
 pnpm check-types     # next typegen + tsc (web) + package checks
 ```
+
+---
+
+## Author
+
+- Website: [vzkiss.com](https://www.vzkiss.com)
+- GitHub: [@vzkiss](https://github.com/vzkiss)
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE). This repository is a **portfolio / demonstration** sample; it is provided **as-is** without warranty.
