@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { sanitizePostLoginRedirect } from '@repo/dto';
 import { apiUrl } from '@/lib/api';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,12 @@ import { routes } from '@/lib/routes';
 
 export default function SignInPage() {
   const handleGoogleLogin = () => {
-    window.location.href = apiUrl('/auth/login/google');
+    const url = new URL(apiUrl('/auth/login/google'));
+    const raw = new URLSearchParams(window.location.search).get('redirect');
+    if (raw !== null && raw !== '') {
+      url.searchParams.set('redirect', sanitizePostLoginRedirect(raw));
+    }
+    window.location.href = url.toString();
   };
 
   return (

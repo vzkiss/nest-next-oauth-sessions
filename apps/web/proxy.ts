@@ -1,28 +1,38 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-/** Path prefixes for routes that require a session cookie on the Next request. */
+// sandbox defaults
 const protectedRoutes = ['/profile'];
 
-const redirectTo = '/signin';
+const defaultRedirectTo = '/signin';
 
-// `matcher` uses path patterns (e.g. `/profile/:path*`); `pathname` at runtime is
-// `/profile` or `/profile/...` — use `startsWith`, never `includes('/profile/:path*')`.
+/**
+ * Proxy to redirect to signin if the user is not authenticated
+ * and the route is protected.
+ * @param req - The incoming request
+ * @returns - The response
+ */
 export default function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, search } = req.nextUrl;
+
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
   );
+
+  // check 'connect-pg-simple' default session cookie
   const hasSession = req.cookies.has('connect.sid');
 
   if (isProtectedRoute && !hasSession) {
-    return NextResponse.redirect(new URL(redirectTo, req.url));
+    const url = new URL(defaultRedirectTo, req.url);
+    url.searchParams.set('redirect', pathname + search);
+
+    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
 }
 
+// only run proxy on matched routes
 export const config = {
-  // Include exact `/profile` and nested paths.
   matcher: ['/profile', '/profile/:path*'],
 };

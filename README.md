@@ -157,6 +157,31 @@ flowchart TB
 
 One NestJS app is enough for OAuth + profile + feedback. Splitting into microservices would be justified when multiple teams or scaling bottlenecks require it; async workflows (e.g. feedback → queue → worker) are the usual next step after a synchronous DB write.
 
+## OAuth redirect flow
+
+1. The user hits Next.js **`/signin`**, optionally with **`?redirect=`** (for example after [`apps/web/proxy.ts`](apps/web/proxy.ts) sends unauthenticated visitors from a protected route to `/signin?redirect=…`).
+2. **Sign in with Google** navigates the browser to **`GET /auth/login/google`** on the API (with the same `redirect` query when present). The API stores a **sanitized** post-login path in the session (`postLoginRedirect`) and starts Passport with **`state: true`**, so Google receives a **random OAuth `state`** nonce tied to that session.
+3. Google redirects to **`GET /auth/validate/google`**, which must match **`GOOGLE_CALLBACK_URL`** and the Google Console authorized redirect URI.
+4. The API validates the OAuth `state`, completes Google sign-in, sets **`session.userId`**, reads **`postLoginRedirect`**, and responds with **`302`** to **`CLIENT_ORIGIN` + path** (default **`/profile`** if `redirect` was omitted or invalid). There is no separate Next.js OAuth callback page.
+
+Post-login paths are normalized in **`@repo/dto`** (`sanitizePostLoginRedirect`) so redirects stay same-origin (no open redirect).
+
+```text
+[ Next.js /signin?redirect=/profile ]
+              ↓
+[ Nest GET /auth/login/google ]
+              ↓  session: postLoginRedirect + OAuth state nonce
+[ Google ]
+              ↓
+[ Nest GET /auth/validate/google ]
+              ↓
+✔ session user id · Set-Cookie connect.sid
+              ↓
+302 → CLIENT_ORIGIN + /profile (or other sanitized path)
+```
+
+**Manual check:** With the API and web dev servers running, open `http://localhost:4000/signin?redirect=%2Fprofile`, finish Google sign-in, and confirm the browser lands on **`/profile`** on the web app.
+
 ## Scripts
 
 ```bash

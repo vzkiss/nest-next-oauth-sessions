@@ -1,19 +1,31 @@
 import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
+import { sanitizePostLoginRedirect } from '@repo/dto';
 import type { Request, Response } from 'express';
 import { User } from '../user/user.entity';
+import { GoogleLoginGuard } from './guards/google-login.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private configService: ConfigService) {}
 
+  /**
+   * Google OAuth Login handler
+   *  - initiates the Google OAuth flow
+   *  - redirects to the Google OAuth login page
+   */
   @Get('login/google')
-  @UseGuards(AuthGuard('google'))
-  async googleLogin() {
-    // Initiates Google OAuth flow
-  }
+  @UseGuards(GoogleLoginGuard)
+  async googleLogin() {}
 
+  /**
+   * Google OAauth Callback handler
+   *  - sets the user session and redirects to the post-login path
+   * @param req - The request object
+   * @param res - The response object
+   * @returns - The response
+   */
   @Get('validate/google')
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req: Request, @Res() res: Response) {
@@ -21,9 +33,18 @@ export class AuthController {
     req.session.userId = user.id;
 
     const clientOrigin = this.configService.get<string>('client.origin');
-    res.redirect(`${clientOrigin}/auth/callback`);
+    const path = sanitizePostLoginRedirect(req.session.postLoginRedirect);
+    delete req.session.postLoginRedirect;
+    res.redirect(`${clientOrigin}${path}`);
   }
 
+  /**
+   * Logout handler
+   *  - destroys the user session and redirects to the home page
+   * @param req - The request object
+   * @param res - The response object
+   * @returns - The response
+   */
   @Get('logout')
   async logout(@Req() req: Request, @Res() res: Response) {
     req.session.destroy((err) => {

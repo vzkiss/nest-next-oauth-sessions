@@ -8,3 +8,5 @@ export type UserDto = {
   name: string;
   image?: string | null;
 };
+
+// export type UpdateUserDto = Omit<UserDto, 'id' | 'email'>;
