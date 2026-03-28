@@ -1,4 +1,5 @@
 import path from 'path';
+import process from 'node:process';
 import { fileURLToPath } from 'url';
 import nextEnv from '@next/env';
 

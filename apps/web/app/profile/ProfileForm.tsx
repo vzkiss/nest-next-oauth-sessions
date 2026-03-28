@@ -85,8 +85,8 @@ function ProfileForm() {
 
   return (
     <Card className="rounded-3xl p-6 shadow-xs">
-      {/* eslint-disable-next-line @next/next/no-img-element -- external / user-supplied URLs */}
       <CardHeader>
+        {/* eslint-disable-next-line @next/next/no-img-element -- external / user-supplied URLs */}
         <img
           src={previewSrc}
           alt={previewAlt}
