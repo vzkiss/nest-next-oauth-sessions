@@ -122,34 +122,21 @@ There is **no** Next.js Route Handler API under `app/api/` — **all** OAuth, se
 
 ## Auth flows (overview)
 
+**Read this first:** diagram below; details in [`docs/auth-architecture.md`](docs/auth-architecture.md).
+
 - **Next** — [`proxy.ts`](apps/web/proxy.ts): optimistic **`connect.sid`** check on matched routes (e.g. `/profile/:path*`). [`requireAuth()`](apps/web/lib/auth.ts): RSC gate via **`GET /user/profile`** with forwarded cookies (React-`cache()`’d). Browser: [`apiFetch` / `apiRequest`](apps/web/lib/api.ts) with `credentials: 'include'`.
 - **Nest** — OAuth entry **`GET /auth/login/google`**, callback **`GET /auth/validate/google`**, [`SessionGuard`](apps/api/src/auth/guards/session.guard.ts) on private JSON routes, [`sanitizeRedirect`](apps/api/src/common/safe-path.util.ts) for post-login URLs.
-
-**Full ASCII flows, ownership table, and edge cases:** [`docs/auth-architecture.md`](docs/auth-architecture.md).
 
 ## Security (backend)
 
 Helmet, CORS restricted to `CLIENT_ORIGIN`, global validation pipe, session guard on private routes, [`ClassSerializerInterceptor`](https://docs.nestjs.com/techniques/serialization) + `@Exclude()` on entities to limit exposed fields. **Rate limiting** via [`@nestjs/throttler`](https://github.com/nestjs/throttler): default **60 requests / minute / IP** globally ([`apps/api/src/app.module.ts`](apps/api/src/app.module.ts)); **`/auth/*`** is **stricter (10 / minute)** except **`GET /auth/logout`** ([`apps/api/src/auth/auth.controller.ts`](apps/api/src/auth/auth.controller.ts)). If Google returns **`error=access_denied`**, see [`oauth-callback-error.middleware.ts`](apps/api/src/auth/middleware/oauth-callback-error.middleware.ts) and [`docs/auth-architecture.md`](docs/auth-architecture.md) (failure / edge behavior).
 
-## Sessions vs JWT
-
-Sessions fit a **single API** that owns auth: revocation is immediate on logout, and the browser only holds a session id cookie. JWT as a _session substitute_ adds signing, expiry, and revocation tradeoffs that rarely pay off at this scale; JWTs remain useful for **service-to-service** or third-party API access where no shared session store exists.
-
-**Production extras** you’d typically add: Redis (or similar) for sessions at scale, stricter or distributed rate limits (in-memory throttler resets on restart; use Redis storage for multiple instances), observability, stricter cookie policy review.
-
-**Sessions:** cookie lifetime uses a **fixed `maxAge`** from login (not a rolling/sliding session). That keeps Postgres session writes predictable for this demo; production often uses **rolling** cookies and/or Redis for high traffic.
-
-### Production / deploy
+## Production / deploy
 
 - **TLS**: terminate HTTPS at your reverse proxy or platform; session cookies already use `secure` when `NODE_ENV=production`.
 - **OAuth**: register **production** `GOOGLE_CALLBACK_URL` and (if required) JavaScript origins in Google Cloud; keep `CLIENT_ORIGIN`, `API_ORIGIN`, and `NEXT_PUBLIC_API_URL` on real schemes/hosts (`https://…`).
 - **Secrets**: generate a strong `SESSION_SECRET`; rotate if leaked.
 - **Cross-subdomain cookies (optional):** locally, UI and API often differ by port; in production, if the web app and API use **different hosts** (e.g. `app.example.com` vs `api.example.com`), you typically set session **`cookie.domain`** / **`SameSite`** explicitly so the browser (and Next RSC cookie forwarding) behave as you intend — not wired in this demo.
-- **Optional at scale**: Redis-backed sessions, distributed rate limiting, structured logging, health checks — not required to understand or run this repo.
-
-### Web client: TanStack Query (not implemented)
-
-Profile and other API-backed UI state use plain **`fetch`** via [`apps/web/lib/api.ts`](apps/web/lib/api.ts). For a production app, **[TanStack Query](https://tanstack.com/query)** (React Query) is a common next step: deduplicated requests, **`refetchOnWindowFocus`** so a tab that was idle picks up changes after another device or tab updated data, and **invalidation after mutations** (e.g. after `PUT /user/profile`). It is intentionally not wired in here to keep the scope small and dependency-light; a future pass would add a root **`QueryClientProvider`** and migrate profile load/update to **`useQuery` / `useMutation`**.
 
 ## Auth, sessions, and cookies (cross-origin)
 
@@ -157,7 +144,7 @@ The **login session is owned by the Nest API**, not by Next.js. After Google OAu
 
 The web app calls the API with **`credentials: 'include'`** (via [`apps/web/lib/api.ts`](apps/web/lib/api.ts): **`apiRequest`** / **`apiFetch`**) so the browser sends that cookie on `localhost:3000` (or your deployed API URL). **`apiFetch`** centralizes **401/403** handling (registered from **`AuthProvider`**). For **server** rendering, [`requireAuth`](apps/web/lib/auth.ts) forwards **`cookies()`** to `GET /user/profile` so protected RSC layouts/pages can gate routes without a same-origin BFF; the **browser** still relies on client state + **`401`** for interactive flows. If `requireAuth` fails, it redirects to **`/signin?redirect=/profile`** (fixed path while `/profile` is the only protected segment).
 
-The Next.js root **[`proxy.ts`](apps/web/proxy.ts)** is an **optimistic** gate; **`SessionGuard`** on the API is authoritative (**401**). More detail: [`docs/auth-architecture.md`](docs/auth-architecture.md).
+The Next.js root **[`proxy.ts`](apps/web/proxy.ts)** is an **optimistic** gate; **`SessionGuard`** on the API is authoritative (**401**).
 
 Two **separate deployable apps** (different origins in dev: web `:4000`, API `:3000`). Solid arrows: requests. Dashed: **`Set-Cookie`** on the API response.
 
@@ -190,6 +177,14 @@ flowchart TB
   SESS -.->|"Set-Cookie connect.sid"| BR
 ```
 
+## Out of scope / possible extensions
+
+Not required to run or understand this repo; typical production follow-ups:
+
+- **Sessions vs JWT:** server-side sessions fit a **single API** that owns auth (immediate revocation on logout). JWT as a session substitute adds tradeoffs; JWTs stay useful for **service-to-service** or third-party APIs without a shared session store.
+- **Session storage & cookie behavior:** this demo uses **fixed `maxAge`** and Postgres via **connect-pg-simple**; at scale you might use **Redis** (or similar), **rolling** sessions, **distributed** rate limits (vs in-memory throttler), observability, and health checks.
+- **Web data layer:** profile and other API state use plain **`fetch`** ([`apps/web/lib/api.ts`](apps/web/lib/api.ts)). **[TanStack Query](https://tanstack.com/query)** is a common upgrade for deduped requests, refetch-on-focus, and mutation invalidation.
+
 ## Architecture note
 
 One NestJS app is enough for OAuth + profile + feedback. Splitting into microservices would be justified when multiple teams or scaling bottlenecks require it; async workflows (e.g. feedback → queue → worker) are the usual next step after a synchronous DB write.
@@ -205,5 +200,4 @@ pnpm format          # Prettier write
 pnpm format:check    # Prettier check
 pnpm lint            # ESLint (workspace packages that define `lint`)
 pnpm check-types     # Turbo runs each package’s `check-types` script (web: `next typegen && tsc --noEmit`)
-
 ```

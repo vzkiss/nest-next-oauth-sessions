@@ -1,6 +1,6 @@
 # Auth architecture
 
-Companion to the root [README](../README.md). This file has the **full step-by-step flows**; the README has the **mermaid overview** (Web vs API as separate apps, OAuth, RSC, session store).
+Companion to the root [README](../README.md). **Details and ASCII flows live here;** the README has the **mermaid diagram** and an **Out of scope / possible extensions** section for JWT, Redis, TanStack Query, etc.
 
 ## Step-by-step flows (Web vs API)
 
@@ -68,10 +68,10 @@ Client-side calls use [`apiFetch`](../apps/web/lib/api.ts) (`credentials: 'inclu
 
 ### What each service owns
 
-| | Next.js (`apps/web`) | NestJS (`apps/api`) |
-|---|----------------------|----------------------|
-| **Role** | UX, optimistic route gate (`proxy.ts`), sign-in page, RSC guard (`requireAuth`), UI | OAuth with Google, session cookie + DB store, **`sanitizeRedirect`**, post-login redirect |
-| **Critical guarantee** | User should not get a stable protected UI without the API accepting the session (RSC + client **401** handling) | **Redirect targets are safe** (no open redirect); identity and session creation |
+|                        | Next.js (`apps/web`)                                                                                            | NestJS (`apps/api`)                                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Role**               | UX, optimistic route gate (`proxy.ts`), sign-in page, RSC guard (`requireAuth`), UI                             | OAuth with Google, session cookie + DB store, **`sanitizeRedirect`**, post-login redirect |
+| **Critical guarantee** | User should not get a stable protected UI without the API accepting the session (RSC + client **401** handling) | **Redirect targets are safe** (no open redirect); identity and session creation           |
 
 **One-line summary:** the **web** layer handles UX and gating; the **API** handles identity, session security, and validated redirects.
 
