@@ -3,7 +3,8 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { User } from '@repo/api/user/entities/user.entity';
 import { apiUrl } from '@/lib/api';
-import { routes } from '@/lib/routes';
+import { apiPaths } from '@/config/api-paths';
+import { routes } from '@/config/routes';
 
 export type ValidateSessionResult =
   | { ok: true; user: User }
@@ -20,7 +21,7 @@ async function authUncached(): Promise<ValidateSessionResult> {
     .map(({ name, value }) => `${name}=${value}`)
     .join('; ');
 
-  const response = await fetch(apiUrl('/user/profile'), {
+  const response = await fetch(apiUrl(apiPaths.userProfile), {
     headers: cookieHeader ? { cookie: cookieHeader } : {},
     cache: 'no-store',
   });
@@ -52,8 +53,7 @@ export async function requireAuth(): Promise<User> {
   const user = await auth();
 
   if (!user) {
-    // fallback redirect (should rarely trigger if proxy works)
-    redirect(routes.signIn);
+    redirect(`${routes.signIn}?redirect=${encodeURIComponent(routes.profile)}`);
   }
 
   return user;

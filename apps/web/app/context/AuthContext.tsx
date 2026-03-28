@@ -13,7 +13,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import type { User } from '@repo/api/user/entities/user.entity';
 import { apiRequest, configureApiSessionInvalidHandler } from '@/lib/api';
-import { routes } from '@/lib/routes';
+import { routes } from '@/config/routes';
 
 interface AuthContextType {
   user: User | null;

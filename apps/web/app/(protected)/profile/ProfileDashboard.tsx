@@ -6,7 +6,7 @@ import { ProfileForm } from './ProfileForm';
 import { FeedbackDialog } from './FeedbackDialog';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { routes } from '@/lib/routes';
+import { routes } from '@/config/routes';
 import type { User } from '@repo/api/user/entities/user.entity';
 import { useAuth } from '@/app/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';

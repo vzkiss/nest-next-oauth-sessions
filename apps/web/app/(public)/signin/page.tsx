@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { apiUrl } from '@/lib/api';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { routes } from '@/lib/routes';
+import { routes } from '@/config/routes';
 import { toast } from 'sonner';
 
 /**
@@ -23,6 +23,7 @@ function useOauthCancelled() {
       return;
     }
 
+    // clear the oauth parameter
     const next = new URLSearchParams(searchParams.toString());
     next.delete('oauth');
     const qs = next.toString();

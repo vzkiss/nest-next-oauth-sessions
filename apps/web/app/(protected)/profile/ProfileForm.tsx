@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { useAuth } from '@/app/context/AuthContext';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { apiPaths } from '@/config/api-paths';
 import { apiFetch, ApiUnauthorizedError, ApiHttpError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -56,7 +57,7 @@ function ProfileForm() {
 
   const onSubmit = async (values: ProfileFormValues) => {
     try {
-      const response = await apiFetch('/user/profile', {
+      const response = await apiFetch(apiPaths.userProfile, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...(values as UpdateUserDto) }),

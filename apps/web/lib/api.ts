@@ -1,4 +1,4 @@
-import { config } from '@/lib/config';
+import { config } from '@/config/application';
 
 /** API base URL with no trailing slash (from `NEXT_PUBLIC_API_URL`). */
 export function apiUrl(path: string): string {
