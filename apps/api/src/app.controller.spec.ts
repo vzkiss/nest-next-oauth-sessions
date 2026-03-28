@@ -25,7 +25,7 @@ describe('AppController', () => {
         expect.objectContaining({
           status: 'ok',
           timestamp: expect.any(String),
-        }),
+        })
       );
     });
   });
