@@ -7,8 +7,8 @@ import { FeedbackDialog } from './FeedbackDialog';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { routes } from '@/lib/routes';
-import type { User } from '@repo/api';
-import { useAuth } from '../context/AuthContext';
+import type { User } from '@repo/api/user/entities/user.entity';
+import { useAuth } from '@/app/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function ProfileCardSkeleton() {

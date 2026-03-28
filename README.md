@@ -82,7 +82,7 @@ pnpm dev
 ## Project structure
 
 - `apps/api` — NestJS API (auth, user, feedback)
-- `apps/web` — Next.js app (sign-in, profile, feedback modal); API calls go through [`apps/web/lib/api.ts`](apps/web/lib/api.ts)
+- `apps/web` — Next.js app; App Router groups `app/(public)/…` (e.g. `/signin`) and `app/(protected)/…` (e.g. `/profile`) — segment names in parentheses are **not** part of the URL. API calls go through [`apps/web/lib/api.ts`](apps/web/lib/api.ts)
 - `docs/` — extra notes (e.g. [`docs/auth-architecture.md`](docs/auth-architecture.md))
 - `packages/api` — shared **TypeORM entities** (e.g. `User`, `Feedback`), **DTOs** for request bodies (class-validator / Nest `mapped-types`), **`sanitizePostLoginRedirect`**, and the public **`@repo/api`** package consumed by the API and typed imports in the web app
 - `packages/typescript-config` — shared TS config (`extends` for apps)

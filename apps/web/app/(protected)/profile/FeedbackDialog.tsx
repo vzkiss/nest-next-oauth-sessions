@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
-import type { CreateFeedbackDto } from '../../../../packages/api/dist/entry';
+import type { CreateFeedbackDto } from '@repo/api/feedback/dto/create-feedback.dto';
 import { apiFetch, ApiUnauthorizedError, ApiHttpError } from '@/lib/api';
 import {
   Dialog,
