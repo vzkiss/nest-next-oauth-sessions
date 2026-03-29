@@ -1,9 +1,43 @@
 # Auth architecture
 
-Companion to the root [README](../README.md).
+Step-by-step **how** this repo wires auth: flows, files, and edge behavior.
 
-This document focuses on step-by-step flows, ownership, and edge cases.  
-The README covers the high-level diagram and project overview.
+**Why** these choices exist: [decisions.md](decisions.md). **Options compared:** [tradeoffs.md](tradeoffs.md). Root [README](../README.md): **Key design**, high-level diagram, env and runbook.
+
+## Detailed component diagram
+
+Maps **apps/web** vs **apps/api** internals: browser and RSC traffic to Nest, OAuth redirects, **express-session** + **connect-pg-simple** → Postgres, and **Set-Cookie**. For route-by-route ASCII, see **Step-by-step flows** below.
+
+```mermaid
+flowchart TB
+  subgraph WEB ["Web — Next.js (apps/web)"]
+    BR[Browser]
+    RSC[Next server RSC]
+    PX[proxy.ts]
+  end
+
+  subgraph API ["API — NestJS (apps/api)"]
+    NEST[Nest HTTP]
+    SESS[express-session]
+    CPS[connect-pg-simple]
+  end
+
+  GOOGLE[Google OAuth]
+  DB[(Postgres)]
+
+  BR --> PX
+  BR -->|"apiRequest
+  credentials include"| NEST
+  BR -->|"GET /auth/login/google"| NEST
+  RSC -->|"GET /user/profile
+  Cookie forwarded"| NEST
+  NEST -->|"302"| GOOGLE
+  GOOGLE -->|"GET /auth/validate/google"| NEST
+  NEST --> SESS
+  SESS --> CPS
+  CPS --> DB
+  SESS -.->|"Set-Cookie connect.sid"| BR
+```
 
 ## Step-by-step flows (Web vs API)
 
@@ -76,16 +110,9 @@ Client-side calls use [`apiFetch`](../apps/web/lib/api.ts) (`credentials: 'inclu
 | **Role**               | UX, optimistic route gate (`proxy.ts`), sign-in page, RSC guard (`requireAuth`), UI                             | OAuth with Google, session cookie + DB store, **`sanitizeRedirect`**, post-login redirect |
 | **Critical guarantee** | User should not get a stable protected UI without the API accepting the session (RSC + client **401** handling) | **Redirect targets are safe** (no open redirect); identity and session creation           |
 
-**One-line summary:** the **web** layer handles UX and gating; the **API** handles identity, session security, and validated redirects.
+If Google returns **`error=access_denied`**, middleware redirects to **`/signin?oauth=cancelled`** ([`oauth-callback-error.middleware.ts`](../apps/api/src/auth/middleware/oauth-callback-error.middleware.ts)); details also under **Failure / edge** at the end of this document.
 
-If Google returns **`error=access_denied`**, middleware redirects to **`/signin?oauth=cancelled`** (see [`oauth-callback-error.middleware.ts`](../apps/api/src/auth/middleware/oauth-callback-error.middleware.ts)).
-
-## Split stack
-
-- **Next.js (`apps/web`)** — UI layer; does not issue session cookies
-- **Nest (`apps/api`)** — owns OAuth, sessions, and authorization (`SessionGuard`)
-
-## Cookie: `connect.sid`
+## Cookie (connect.sid)
 
 - Default cookie from **express-session**
 - Set by the **Nest API** after login
@@ -120,11 +147,9 @@ Using `window.location.assign()` forces a full navigation (optional UX hardening
 
 ## Contrast with “Next-native” auth
 
-Typical Next.js auth assumes the session is available on the Next server.
+Next cannot read the Nest session store on its own. **`requireAuth()`** forwards cookies to the API instead of a local `getSession()`-style resolver. Why that boundary: [decisions.md](decisions.md) (§5).
 
-Here, the session lives in the **Nest API**, so Next re-validates by calling the API with forwarded cookies (`requireAuth`).
-
-## Protected layout + `cache()`
+## Protected layout and cache()
 
 - `app/(protected)/layout.tsx` runs **`await requireAuth()`** (for the redirect side effect; return value unused) so the whole segment is gated.
 - Nested pages (e.g. profile) run **`const user = await requireAuth()`** for props. React **`cache()`** on the session helper in **`lib/auth.ts`** ensures **one** `fetch` per request.

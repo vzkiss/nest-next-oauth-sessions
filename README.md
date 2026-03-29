@@ -1,19 +1,23 @@
-# Full-stack Auth Architecture — NestJS API + Next.js (RSC) + Postgres sessions
+# Auth Architecture — NestJS API + Next.js (RSC)
 
-Google OAuth across a **NestJS API** and **Next.js (RSC)**, using PostgreSQL-backed server-side sessions.
+Full-Stack Google OAuth across a **NestJS API** and **Next.js (RSC)**, using PostgreSQL-backed server-side sessions, clearly separated trust boundaries between Web and API  
 
-The API owns identity and sessions; Next.js handles UI and route guarding.
-
-This repo is a **review-friendly sample**:
-- explicit config validation at API startup  
-- two deployable apps (Web + API)  
-- clearly separated trust boundaries between Web and API  
-
-> **Note:** This is a demonstration project, not a production SaaS. It focuses on clear architecture, security-aware defaults, and a runnable local setup rather than feature completeness.
+> **Note:** This is a demonstration project, not a production SaaS. It focuses on clear architecture, security-aware defaults, and a runnable local setup.
 >
 > **Documentation**
 >
-> - **[`docs/auth-architecture.md`](docs/auth-architecture.md)** — Step-by-step flows (ASCII), ownership, proxy vs API authority, client/RSC behavior, failure paths.
+> - **[`docs/decisions.md`](docs/decisions.md)** — Architecture decisions (trust boundary, proxy vs API, sessions, RSC)
+> - **[`docs/tradeoffs.md`](docs/tradeoffs.md)** — Sessions vs JWT; API-owned vs Next-only
+> - **[`docs/auth-architecture.md`](docs/auth-architecture.md)** — Step-by-step flows (ASCII), ownership, proxy vs API, RSC/client behavior, failure paths
+
+## Key design
+
+- **API (NestJS)** owns identity, sessions, and the OAuth flow.
+- **Next.js (RSC)** handles UI and route guarding (`requireAuth()`, client fetches with `credentials: 'include'`).
+- **Root proxy (`proxy.ts`)** is for UX redirects (cookie presence), not security—session validation happens on the API.
+- **All data access** is gated with API session checks (`SessionGuard`, etc.).
+
+Focused on auth boundaries, not feature completeness. More depth: [`docs/decisions.md`](docs/decisions.md) · [`docs/tradeoffs.md`](docs/tradeoffs.md) · [`docs/auth-architecture.md`](docs/auth-architecture.md).
 
 ---
 
@@ -42,37 +46,31 @@ Two **separate origins** in local dev (web **:4000**, API **:3000**). The browse
 | **Data**     | PostgreSQL, TypeORM, shared **`@repo/api`** package (entities + DTOs)    |
 | **Monorepo** | Turborepo, pnpm                                                          |
 
-**Auth flows (overview)** — see diagram below.
-
-Full details (ownership, edge cases): [`docs/auth-architecture.md`](docs/auth-architecture.md).
+**Auth flows (overview)** — diagram below. Rationale: [`docs/decisions.md`](docs/decisions.md). Flows & edges: [`docs/auth-architecture.md`](docs/auth-architecture.md).
 
 ```mermaid
 flowchart TB
-  subgraph WEB ["Web — Next.js (apps/web)"]
+  subgraph WEB [Web - Next.js]
     BR[Browser]
-    RSC[Next server RSC]
-    PX[proxy.ts]
+    PX["proxy.ts (UX only)"]
+    RSC["RSC / UI"]
   end
 
-  subgraph API ["API — NestJS (apps/api)"]
-    NEST[Nest HTTP]
-    SESS[express-session]
-    CPS[connect-pg-simple]
+  subgraph API_LAYER [API - NestJS]
+    API_NODE["NestJS API (Source of Truth)"]
+    DB[(Postgres Sessions)]
   end
 
-  GOOGLE[Google OAuth]
-  DB[(Postgres)]
+  GOOGLE["Google OAuth"]
 
-  BR --> PX
-  BR -->|"apiRequest credentials include"| NEST
-  BR -->|"GET /auth/login/google"| NEST
-  RSC -->|"GET /user/profile Cookie forwarded"| NEST
-  NEST -->|"302"| GOOGLE
-  GOOGLE -->|"GET /auth/validate/google"| NEST
-  NEST --> SESS
-  SESS --> CPS
-  CPS --> DB
-  SESS -.->|"Set-Cookie connect.sid"| BR
+  BR --> PX --> RSC
+  RSC -->|validate session| API_NODE
+  API_NODE --> DB
+
+  BR -->|login| API_NODE
+  API_NODE --> GOOGLE
+  GOOGLE --> API_NODE
+  API_NODE -->|Set-Cookie connect.sid| BR
 ```
 
 ---
@@ -85,7 +83,9 @@ flowchart TB
 │   ├── api/                 # NestJS — OAuth, user, feedback
 │   └── web/                 # Next.js — App Router, proxy.ts, lib/auth.ts
 ├── docs/
-│   └── auth-architecture.md # Deep-dive auth flows & edges
+│   ├── decisions.md           # Why (architecture decisions)
+│   ├── tradeoffs.md           # Sessions vs JWT; API vs Next-only
+│   └── auth-architecture.md   # How (flows, ownership, edges)
 ├── packages/
 │   ├── api/                 # @repo/api — entities, DTOs, shared types
 │   ├── eslint-config/
@@ -207,18 +207,10 @@ Rate limits:
 
 ---
 
-## Auth, sessions (summary)
-
-- Session is owned by the **Nest API** (`connect.sid` on API origin)
-- RSC forwards cookies for `GET /user/profile`
-- `proxy.ts` is optimistic; `SessionGuard` is authoritative
-
----
-
 ## Out of scope / possible extensions
 
-- **Sessions vs JWT** — server-side sessions for a single API; JWT for service-to-service / third-party APIs.
-- **Scale** — Redis sessions, rolling sessions, distributed rate limits, observability, health checks.
+- **Sessions vs JWT** — see [`docs/tradeoffs.md`](docs/tradeoffs.md); this repo uses server-side sessions for browser→API auth; JWT is common for service-to-service / third-party APIs.
+- **Scale** — Redis sessions, rolling sessions, observability, health checks.
 - **Web** — plain **`fetch`** today; **[TanStack Query](https://tanstack.com/query)** for dedupe / refetch / invalidation.
 
 ---
@@ -246,7 +238,7 @@ pnpm check-types     # next typegen + tsc (web) + package checks
 
 ## License
 
-Released under the [MIT License](LICENSE). This repository is a **demonstration** sample; it is provided **as-is** without warranty.
+Released under the [MIT License](LICENSE). This repository is a demonstration sample; it is provided as-is without warranty.
 
 ---
 
