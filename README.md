@@ -1,34 +1,33 @@
 # Full-stack Auth Architecture — NestJS API + Next.js (RSC) + Postgres sessions
 
-Full-stack **Google OAuth** with **NestJS API** and **Next.js (RSC)**, using server-side sessions in PostgreSQL.
+Google OAuth across a **NestJS API** and **Next.js (RSC)**, using PostgreSQL-backed server-side sessions.
 
-Includes **cross-origin session handling** and **RSC session patterns**.
+The API owns identity and sessions; Next.js handles UI and route guarding.
 
 This repo is a **review-friendly sample**:
 - explicit config validation at API startup  
-- two deployable apps (web + API)  
-- clearly separated trust boundaries between web and API  
+- two deployable apps (Web + API)  
+- clearly separated trust boundaries between Web and API  
 
-> **Note:** This is a portfolio / demonstration project, not a production SaaS. It focuses on clear architecture, security-aware defaults, and a runnable local setup rather than feature completeness.
+> **Note:** This is a demonstration project, not a production SaaS. It focuses on clear architecture, security-aware defaults, and a runnable local setup rather than feature completeness.
 >
 > **Documentation**
 >
-> - **[`docs/auth-architecture.md`](docs/auth-architecture.md)** — Step-by-step flows (ASCII), ownership, proxy vs API authority, client/RSC behavior, failure paths
->
-> **Context:** **NestJS** and **Next.js** are wired the way you’d extend toward production — validated config, session-backed auth, guards, CORS, rate limits. The **feature set** stays small on purpose (OAuth, sessions, profile, feedback) so the implementation stays easy to review.
+> - **[`docs/auth-architecture.md`](docs/auth-architecture.md)** — Step-by-step flows (ASCII), ownership, proxy vs API authority, client/RSC behavior, failure paths.
 
 ---
 
 ## Features
 
-- Google OAuth and **HttpOnly** session cookies (`connect.sid`, `SameSite=lax`, `secure` in production)
+- Google OAuth with **HttpOnly** session cookies  
+  (`connect.sid`, `SameSite=lax`, `secure` in production)
 - Sessions persisted in **Postgres** (survive API restarts)
-- **Next.js** protected routes via `(protected)` + **`requireAuth()`** (RSC `GET /user/profile`, React-`cache()` dedupe)
-- **Nest** **`SessionGuard`** on private APIs; **Helmet**, CORS, validation, serialization, **rate limits**
-- Profile **read/update** + **feedback** intake (demo persistence)
-- **TypeScript**, ESLint, Prettier, Turborepo monorepo
+- **Next.js** protected routes via `(protected)` + **`requireAuth()`**  
+  (RSC `GET /user/profile`, React-`cache()` dedupe)
+- **Nest** **`SessionGuard`** on private APIs  
+  + Helmet, CORS, validation, serialization, rate limits
 
-There is **no** Next.js Route Handler API under `app/api/` — **all** OAuth and session-backed JSON live in **`apps/api`**.
+*There is **no** Next.js Route Handler API under `app/api/` — **all** OAuth and session-backed JSON live in **`apps/api`**.*
 
 ---
 
@@ -43,12 +42,9 @@ Two **separate origins** in local dev (web **:4000**, API **:3000**). The browse
 | **Data**     | PostgreSQL, TypeORM, shared **`@repo/api`** package (entities + DTOs)    |
 | **Monorepo** | Turborepo, pnpm                                                          |
 
-**Auth flows (overview)** — **Read this first:** diagram below; full detail in [`docs/auth-architecture.md`](docs/auth-architecture.md).
+**Auth flows (overview)** — see diagram below.
 
-- **Next** — [`proxy.ts`](apps/web/proxy.ts) (optimistic gate); [`requireAuth()`](apps/web/lib/auth.ts); [`apiFetch` / `apiRequest`](apps/web/lib/api.ts)
-- **Nest** — `GET /auth/login/google`, `GET /auth/validate/google`, [`SessionGuard`](apps/api/src/auth/guards/session.guard.ts), [`sanitizeRedirect`](apps/api/src/common/safe-path.util.ts)
-
-**Full detail** (ASCII flows, ownership, failure / edge behavior): [`docs/auth-architecture.md`](docs/auth-architecture.md).
+Full details (ownership, edge cases): [`docs/auth-architecture.md`](docs/auth-architecture.md).
 
 ```mermaid
 flowchart TB
@@ -78,8 +74,6 @@ flowchart TB
   CPS --> DB
   SESS -.->|"Set-Cookie connect.sid"| BR
 ```
-
-_Same auth story with more narrative + edge cases:_ [`docs/auth-architecture.md`](docs/auth-architecture.md).
 
 ---
 
@@ -196,7 +190,11 @@ pnpm dev
 
 ## Security (backend)
 
-Helmet, CORS to **`CLIENT_ORIGIN`**, validation pipe, **`SessionGuard`**, [`ClassSerializerInterceptor`](https://docs.nestjs.com/techniques/serialization) + `@Exclude()`. Rate limits: **60/min/IP** global ([`app.module.ts`](apps/api/src/app.module.ts)); **`/auth/*`** **10/min** except **`GET /auth/logout`** ([`auth.controller.ts`](apps/api/src/auth/auth.controller.ts)). Google **`error=access_denied`**: [`oauth-callback-error.middleware.ts`](apps/api/src/auth/middleware/oauth-callback-error.middleware.ts) + [`docs/auth-architecture.md`](docs/auth-architecture.md).
+Helmet, CORS to **CLIENT_ORIGIN**, validation pipe, **SessionGuard**, and serialization via `ClassSerializerInterceptor` + `@Exclude()`.
+
+Rate limits:
+- 60/min/IP global
+- `/auth/*`: 10/min (except logout)
 
 ---
 
@@ -209,18 +207,11 @@ Helmet, CORS to **`CLIENT_ORIGIN`**, validation pipe, **`SessionGuard`**, [`Clas
 
 ---
 
-## Auth, sessions, cross-origin (summary)
+## Auth, sessions (summary)
 
-The **session is owned by the Nest API** (`connect.sid` on the **API origin**). **connect-pg-simple** stores rows; it does not define the cookie ([`main.ts`](apps/api/src/main.ts)). **`apiFetch`** handles **401/403** via **`AuthProvider`**. **`requireAuth`** forwards **`cookies()`** for RSC; on failure redirects to **`/signin?redirect=/profile`** (fixed while only `/profile` is protected). **`proxy.ts`** is optimistic; **`SessionGuard`** is authoritative.
-
-### Edge cases (handled)
-
-- **Expired or revoked session:** API returns **401**; **`apiFetch`** runs the **`AuthProvider`** handler (clear user, redirect to sign-in; toast only if a user was already loaded). RSC **`requireAuth`** redirects when the profile fetch fails. **`proxy.ts`** only sees the cookie — treat **Nest 401** as the real signal.
-- **Logout:** **`GET /auth/logout`** destroys the session and clears **`connect.sid`**; the client uses **`apiRequest`** (not **`apiFetch`**) so logout does not loop through the 401 handler.
-- **OAuth denied:** **`error=access_denied`** → redirect to sign-in with **`oauth=cancelled`** ([`oauth-callback-error.middleware.ts`](apps/api/src/auth/middleware/oauth-callback-error.middleware.ts)).
-- **Unsafe post-login redirect:** [`sanitizeRedirect`](apps/api/src/common/safe-path.util.ts) on the API falls back to a safe path.
-
-More detail (client reconciliation, proxy vs document request, etc.): [`docs/auth-architecture.md`](docs/auth-architecture.md).
+- Session is owned by the **Nest API** (`connect.sid` on API origin)
+- RSC forwards cookies for `GET /user/profile`
+- `proxy.ts` is optimistic; `SessionGuard` is authoritative
 
 ---
 
