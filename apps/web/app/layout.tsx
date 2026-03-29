@@ -41,7 +41,6 @@ export default function RootLayout({
     >
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider>
-          <Toaster position="top-center" />
           <div className="flex h-screen flex-col items-center">
             <main className="mt-auto mb-auto flex min-w-xs">{children}</main>
             <footer className="mb-4 text-sm">
@@ -52,6 +51,7 @@ export default function RootLayout({
             </footer>
           </div>
         </AuthProvider>
+        <Toaster position="top-center" />
       </body>
     </html>
   );

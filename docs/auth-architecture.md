@@ -145,6 +145,16 @@ Using `window.location.assign()` forces a full navigation (optional UX hardening
   - on 401/403 → clears user + redirects via `AuthProvider`
   - throws `ApiUnauthorizedError`
 
+## Nest API defaults (Helmet, CORS, validation, serialization, rate limits)
+
+Session checks (`SessionGuard`, OAuth) sit on top of global API wiring in [`main.ts`](../apps/api/src/main.ts) and [`app.module.ts`](../apps/api/src/app.module.ts):
+
+- **Helmet** — default security-related HTTP headers.
+- **CORS** — `origin` = **`CLIENT_ORIGIN`**, `credentials: true` (browser may send cookies to the API).
+- **ValidationPipe** — global; DTOs define allowed input (`whitelist` / `forbidNonWhitelisted`).
+- **ClassSerializerInterceptor** — response shaping; sensitive fields stay off the wire via `@Exclude()` on entities.
+- **Rate limits** — [`@nestjs/throttler`](https://docs.nestjs.com/security/rate-limiting): **60/min per IP** globally; **`/auth/*`** uses a stricter per-route limit (**10/min**), with **`GET /auth/logout`** excluded via `@SkipThrottle()`.
+
 ## Contrast with “Next-native” auth
 
 Next cannot read the Nest session store on its own. **`requireAuth()`** forwards cookies to the API instead of a local `getSession()`-style resolver. Why that boundary: [decisions.md](decisions.md) (§5).
