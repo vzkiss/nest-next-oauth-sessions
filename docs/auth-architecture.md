@@ -1,6 +1,9 @@
 # Auth architecture
 
-Companion to the root [README](../README.md). **Details and ASCII flows live here;** the README has the **mermaid diagram** and an **Out of scope / possible extensions** section for JWT, Redis, TanStack Query, etc.
+Companion to the root [README](../README.md).
+
+This document focuses on step-by-step flows, ownership, and edge cases.  
+The README covers the high-level diagram and project overview.
 
 ## Step-by-step flows (Web vs API)
 
@@ -20,7 +23,7 @@ proxy.ts (Next 16 root proxy; matcher: /profile/:path*)
 User clicks “Continue with Google”
   ↓
 browser navigates to API (leaves Next):
-  GET {API}/auth/login/google?redirect=...   (optional; from ?redirect= on /signin)
+  GET {API}/auth/login/google?redirect=...   (optional; derived from /signin?redirect=...)
   ↓
 … → NestJS + Google (see below)
 ```
@@ -31,7 +34,7 @@ browser navigates to API (leaves Next):
 GET /auth/login/google?redirect=/profile
   ↓
 sanitizeRedirect(raw) → safe same-origin path; stored on session as postLoginRedirect
-  Passport (state: true) adds OAuth state nonce (CSRF); not the same field as postLoginRedirect
+  Passport (state: true) adds an OAuth state nonce (CSRF protection), separate from `postLoginRedirect`.
   ↓
 302 → Google consent screen
 ```
@@ -79,33 +82,47 @@ If Google returns **`error=access_denied`**, middleware redirects to **`/signin?
 
 ## Split stack
 
-- **Next.js (`apps/web`)** — UI only for session-backed flows. It does **not** issue the login session cookie (`connect.sid` is set by the Nest API).
-- **Nest (`apps/api`)** — Google OAuth, `express-session`, and **connect-pg-simple** (session rows in Postgres). **Authorization** for data is enforced here (`SessionGuard` → `401` when unauthenticated).
+- **Next.js (`apps/web`)** — UI layer; does not issue session cookies
+- **Nest (`apps/api`)** — owns OAuth, sessions, and authorization (`SessionGuard`)
 
 ## Cookie: `connect.sid`
 
-- Default cookie name from **`express-session`** (see [`main.ts`](../apps/api/src/main.ts)).
-- **connect-pg-simple** only provides the **store** (Postgres); it does not define the cookie. The cookie is set on responses from the **API origin** after login (e.g. [`auth.controller.ts`](../apps/api/src/auth/auth.controller.ts) sets `req.session.userId` and the session middleware persists it).
+- Default cookie from **express-session**
+- Set by the **Nest API** after login
+- Stored in Postgres via **connect-pg-simple** (store only; does not define the cookie)
 
 ## Browser ↔ two origins
 
 Locally, UI is often `http://localhost:4000` and API `http://localhost:3000`. The web app uses `fetch(..., { credentials: 'include' })` (centralized in [`apps/web/lib/api.ts`](../apps/web/lib/api.ts)) so the browser attaches the session cookie to **API** requests.
 
-**Server Components:** [`lib/auth.ts`](../apps/web/lib/auth.ts) forwards `cookies()` from `next/headers` to **`GET /user/profile`** on the API (cached per request). **`requireAuth()`** redirects to **`/signin`** when invalid and returns **`User`** when valid, so **`app/(protected)/layout.tsx`** and nested pages **dedupe** the profile fetch. Protected UI still hydrates with **`AuthProvider`** client state for interactive flows.
+**Server Components:** [`lib/auth.ts`](../apps/web/lib/auth.ts) forwards `cookies()` from `next/headers` to **`GET /user/profile`** on the API. **`requireAuth()`** redirects to **`/signin`** when invalid and returns **`User`** when valid, so **`app/(protected)/layout.tsx`** and nested pages **dedupe** the profile fetch. Protected UI still hydrates with **`AuthProvider`** client state for interactive flows.
 
 ## Next.js `proxy.ts`
 
-[`apps/web/proxy.ts`](../apps/web/proxy.ts) is the Next 16 root **proxy** (edge-style gate before the App Router). It is **always part of this app** for matched routes (e.g. `/profile`). Any check based only on **`connect.sid` on the Next request** is **optimistic**: it cannot see whether the session row still exists in Postgres. Treat **Nest `401`** as the real signal for expired or revoked sessions.
+`apps/web/proxy.ts` is the Next 16 root proxy (edge-style gate before the App Router).
 
-**Document request vs client transition:** A plain HTTP `GET /profile` is redirected when the session cookie is missing on the Next request (e.g. `curl -I`). A **`router.push('/profile')`** from the home page is a **client transition**: Next can **paint the `/profile` shell briefly** before RSC runs `requireAuth()` and redirects—so you may see a flash. The home page currently uses **`router.push`** ([`app/page.tsx`](../apps/web/app/page.tsx)); **`window.location.assign(routes.profile)`** forces a full navigation so the proxy runs like a document request (optional UX hardening).
+Checks based only on `connect.sid` are **optimistic** — they cannot verify if the session still exists in Postgres.  
+The API (`SessionGuard`) is the source of truth.
+
+### Navigation behavior
+
+- **Document request (`GET /profile`)** → redirected immediately if no cookie
+- **Client transition (`router.push`)** → page may briefly render before RSC redirect
+
+Using `window.location.assign()` forces a full navigation (optional UX hardening).
 
 ## Client reconciliation
 
-[`apps/web/lib/api.ts`](../apps/web/lib/api.ts): **`apiRequest`** is transport-only (used for logout so 401 does not loop). **`apiFetch`** wraps it: on **401/403** it runs a handler registered via **`configureApiSessionInvalidHandler`** from **`AuthProvider`** (clear user, redirect to sign-in; **toast only if `user` was already set**, so guests who never signed in are not told their “session expired”). Then throws **`ApiUnauthorizedError`**. **`logout`** stays on **`apiRequest`**.
+- `apiRequest` → low-level transport (used for logout)
+- `apiFetch` → adds auth handling:
+  - on 401/403 → clears user + redirects via `AuthProvider`
+  - throws `ApiUnauthorizedError`
 
-## Contrast with “Next-native” auth guides
+## Contrast with “Next-native” auth
 
-Patterns like `getSession({ headers })` on the **Next** server assume the session (or JWT) is visible to Next. Here the session lives in the **Nest** API; the Next server **re-validates** by calling the API with forwarded cookies (`requireAuth` / cached lookup in `lib/auth.ts`), analogous to a guard, without duplicating session storage on Next.
+Typical Next.js auth assumes the session is available on the Next server.
+
+Here, the session lives in the **Nest API**, so Next re-validates by calling the API with forwarded cookies (`requireAuth`).
 
 ## Protected layout + `cache()`
 
