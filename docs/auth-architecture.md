@@ -164,7 +164,7 @@ Next cannot read the Nest session store on its own. **`requireAuth()`** forwards
 - `app/(protected)/layout.tsx` runs **`await requireAuth()`** (for the redirect side effect; return value unused) so the whole segment is gated.
 - Nested pages (e.g. profile) run **`const user = await requireAuth()`** for props. React **`cache()`** on the session helper in **`lib/auth.ts`** ensures **one** `fetch` per request.
 
-## Failure / edge behavior (short)
+## Failure / edge behavior
 
 - **Expired or removed session row:** API returns **401**; **`apiFetch`** runs the session-invalid handler; RSC **`requireAuth`** redirects to **`/signin`** when profile fetch fails.
 - **Tampered or unsafe redirect:** [`sanitizeRedirect`](../apps/api/src/common/safe-path.util.ts) on Nest falls back to a safe default (`/profile`).

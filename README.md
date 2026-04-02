@@ -1,14 +1,45 @@
 # Auth Architecture — NestJS API + Next.js (RSC)
 
-Full-Stack Google OAuth across a **NestJS API** and **Next.js (RSC)**, using PostgreSQL-backed server-side sessions, clearly separated trust boundaries between Web and API  
+An opinionated auth architecture for Next.js (RSC) + a separate API.
 
-> **Note:** This is a demonstration project, not a production SaaS. It focuses on clear architecture, security-aware defaults, and a runnable local setup.
+## TL;DR
+
+Most Next.js auth setups work — until you introduce a separate API.
+
+This repo shows a clean split:
+
+→ API owns sessions + identity (source of truth)  
+→ Next.js handles UI + routing (RSC)  
+→ Middleware is UX only (not security)
+
+No split ownership. No hidden coupling. Clear trust boundary.
+
+## The problem
+
+Most examples either:
+
+- keep everything inside Next.js  
+- or ignore session ownership and redirect validation  
+
+This model breaks down quickly:
+
+→ you add a separate API  
+→ you introduce mobile clients  
+→ you need clear revocation or control
+
+> **About this repo:**
 >
-> **Documentation**
+> This is a focused auth architecture demo, not a full production SaaS.
+> - Clear trust boundaries (API vs Web)
+> - Server-side sessions (Postgres)
+> - End-to-end OAuth flow (Google)
 >
-> - **[`docs/decisions.md`](docs/decisions.md)** — Architecture decisions (trust boundary, proxy vs API, sessions, RSC)
-> - **[`docs/tradeoffs.md`](docs/tradeoffs.md)** — Sessions vs JWT; API-owned vs Next-only
-> - **[`docs/auth-architecture.md`](docs/auth-architecture.md)** — Step-by-step flows (ASCII), ownership, proxy vs API, RSC/client behavior, failure paths
+> **Documentation:**
+>
+>- **decisions** → [`docs/decisions.md`](docs/decisions.md)
+>- **tradeoffs** → [`docs/tradeoffs.md`](docs/tradeoffs.md)
+>- **flows** → [`docs/auth-architecture.md`](docs/auth-architecture.md)
+
 
 ## Key design
 
